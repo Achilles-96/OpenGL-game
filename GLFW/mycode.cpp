@@ -221,7 +221,7 @@ int pressed_state = 0, collision_state=0;
 double curx,cury,initx,inity,speedx,speedy,strength=0.5,prevx,prevy,cannonball_size=18;
 double fireposx=-400,fireposy=100;
 double pivotx=10,pivoty=200,angular_v,angle;
-VAO  *cannonball, *gameFloor, *woodlogs[6];
+VAO  *cannonball, *gameFloor, *woodlogs[6], *pigs[5];
 /* Executed when a regular key is pressed/released/held-down */
 /* Prefered for Keyboard events */
 void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -354,22 +354,43 @@ void reshapeWindow (GLFWwindow* window, int width, int height)
 }
 
 
+
+void createPig ()
+{
+	// GL3 accepts only Triangles. Quads are not supported
+	double n=30;
+	static GLfloat vertex_buffer_data[9*30+2*3];
+	static GLfloat color_buffer_data[9*30+2*3];
+	float angle=0;
+	for(int i=0;i<n;i++){
+		vertex_buffer_data[9*i] = vertex_buffer_data[9*i+1] = vertex_buffer_data[9*i+2] = 0;
+		vertex_buffer_data[9*i+3]=(cannonball_size+5)*cos(angle*M_PI/180.0f);
+		vertex_buffer_data[9*i+4]=cannonball_size*sin(angle*M_PI/180.0f);
+		vertex_buffer_data[9*i+5]=0;
+		angle += 360.0f/n;
+		vertex_buffer_data[9*i+6]=(cannonball_size+5)*cos(angle*M_PI/180.0f);
+		vertex_buffer_data[9*i+7]=cannonball_size*sin(angle*M_PI/180.0f);
+		vertex_buffer_data[9*i+8]=0;
+		
+		color_buffer_data[9*i] = 114.0f/255.0f;
+		color_buffer_data[9*i+1] = 194.0f/255.0f;
+		color_buffer_data[9*i+2] = 65.0f/255.0f;
+		color_buffer_data[9*i+3] = 114.0f/255.0f;
+		color_buffer_data[9*i+4] = 194.0f/255.0f;
+		color_buffer_data[9*i+5] = 65.0f/255.0f;
+		color_buffer_data[9*i+6] = 114.0f/255.0f;
+		color_buffer_data[9*i+7] = 194.0f/255.0f;
+		color_buffer_data[9*i+8] = 65.0f/255.0f;
+	}
+	// create3DObject creates and returns a handle to a VAO that can be used later
+	pigs[0] = create3DObject(GL_TRIANGLES, n*3 , vertex_buffer_data, color_buffer_data, GL_FILL, 0, 0, cannonball_size);
+
+}
 // Creates the rectangle object used in this sample code
 void createCannonball ()
 {
 	// GL3 accepts only Triangles. Quads are not supported
-/*	static const GLfloat vertex_buffer_data [] = {
-		-cannonball_size,-cannonball_size,0, // vertex 1
-		cannonball_size,-cannonball_size,0, // vertex 2
-		cannonball_size, cannonball_size,0, // vertex 3
-
-		cannonball_size, cannonball_size,0, // vertex 3
-		-cannonball_size, cannonball_size,0, // vertex 4
-		-cannonball_size,-cannonball_size,0  // vertex 1
-	};
-
-*/
-	int n=20;
+	double n=20;
 	static GLfloat vertex_buffer_data[9*20 + 2*3];
 	static GLfloat color_buffer_data [9*20 + 2*3];
 	float angle=0;
@@ -395,44 +416,31 @@ void createCannonball ()
 	}
 
 
-		color_buffer_data[9*20] = 252.0f/255.0f;
-		color_buffer_data[9*20+1] = 187.0f/255.0f;
-		color_buffer_data[9*20+2] = 35.0f/255.0f;
-		color_buffer_data[9*20+3] = 252.0f/255.0f;
-		color_buffer_data[9*20+4] = 187.0f/255.0f;
-		color_buffer_data[9*20+5] = 35.0f/255.0f;
-		color_buffer_data[9*20+6] = 252.0f/255.0f;
-		color_buffer_data[9*20+7] = 187.0f/255.0f;
-		color_buffer_data[9*20+8] = 35.0f/255.0f;
-		color_buffer_data[9*21] = 252.0f/255.0f;
-		color_buffer_data[9*21+1] = 187.0f/255.0f;
-		color_buffer_data[9*21+2] = 35.0f/255.0f;
-		color_buffer_data[9*21+3] = 252.0f/255.0f;
-		color_buffer_data[9*21+4] = 187.0f/255.0f;
-		color_buffer_data[9*21+5] = 35.0f/255.0f;
-		color_buffer_data[9*21+6] = 252.0f/255.0f;
-		color_buffer_data[9*21+7] = 187.0f/255.0f;
-		color_buffer_data[9*21+8] = 35.0f/255.0f;
-	
-	vertex_buffer_data[9*20] = cannonball_size;//*cos((360.0f/n) *M_PI/180.0f);
-	vertex_buffer_data[9*20+1] = 0;//cannonball_size*sin((360.0f/n) *M_PI/180.0f);
+	for(int i=9*n;i<9*(n+2);i+=3){
+		color_buffer_data[i] =252.0f/255.0f;
+		color_buffer_data[i+1] = 187.0f/255.0f;
+		color_buffer_data[i+2] = 35.0f/255.0f;
+	}
+
+	vertex_buffer_data[9*20] = cannonball_size*cos((360.0f/n) *M_PI/180.0f);
+	vertex_buffer_data[9*20+1] = cannonball_size*sin((360.0f/n) *M_PI/180.0f);
 	vertex_buffer_data[9*20+2] = 0;
 	vertex_buffer_data[9*20+3] = cannonball_size+10;
-	vertex_buffer_data[9*20+4] = 0;
+	vertex_buffer_data[9*20+4] = -2;
 	vertex_buffer_data[9*20+5] = 0;
 	vertex_buffer_data[9*20+6] = cannonball_size*cos((360.0f/n) *M_PI/180.0f);
 	vertex_buffer_data[9*20+7] = -cannonball_size*sin((360.0f/n) *M_PI/180.0f);
 	vertex_buffer_data[9*20+8] = 0;
-/*	vertex_buffer_data[9*15+9] = cannonball_size*cos((360.0f/n) *M_PI/180.0f);
-	vertex_buffer_data[9*15+10] = cannonball_size*sin((360.0f/n) *M_PI/180.0f);
-	vertex_buffer_data[9*15+11] = 0;
-	vertex_buffer_data[9*15+12] = cannonball_size;//cos((360.0f/n) *M_PI/180.0f);
-	vertex_buffer_data[9*15+13] = 0;//cannonball_size*sin((360.0f/n) *M_PI/180.0f);
-	vertex_buffer_data[9*15+14] = 0;
-	vertex_buffer_data[9*15+15] = cannonball_size+10;
-	vertex_buffer_data[9*15+16] = 0;
-	vertex_buffer_data[9*15+17] = 0;*/
-
+/*	vertex_buffer_data[9*20+9] = cannonball_size*cos((360.0f/n) *M_PI/180.0f);
+	vertex_buffer_data[9*20+10] = cannonball_size*sin((360.0f/n) *M_PI/180.0f);
+	vertex_buffer_data[9*20+11] = 0;
+	vertex_buffer_data[9*20+12] = cannonball_size;//cos((360.0f/n) *M_PI/180.0f);
+	vertex_buffer_data[9*20+13] = 0;//cannonball_size*sin((360.0f/n) *M_PI/180.0f);
+	vertex_buffer_data[9*20+14] = 0;
+	vertex_buffer_data[9*20+15] = cannonball_size+10;
+	vertex_buffer_data[9*20+16] = 0;
+	vertex_buffer_data[9*20+17] = 0;
+*/
 	// create3DObject creates and returns a handle to a VAO that can be used later
 	cannonball = create3DObject(GL_TRIANGLES, n*3 + 2*3, vertex_buffer_data, color_buffer_data, GL_FILL, 0, 0, cannonball_size);
 }
@@ -486,23 +494,17 @@ void createWoodLogs(){
 		228.0f/255.0f,142.0f/255.0f,57.0f/255.0f,
 		228.0f/255.0f,142.0f/255.0f,57.0f/255.0f,
 		228.0f/255.0f,142.0f/255.0f,57.0f/255.0f
-		/*1,0,0, // color 1
-		0,0,1, // color 2
-		0,1,0, // color 3
-
-		0,1,0, // color 3
-		0.3,0.3,0.3, // color 4
-		1,0,0  // color 1*/
 	};
 	woodlogs[0] = create3DObject(GL_TRIANGLES, 6, vertex_buffer_data, color_buffer_data, GL_FILL, 0, 0, 25);
-	static const GLfloat vertex_buffer_data2 [] = {
-		-30, 10, 0,
-		-30, -10, 0,
-		30, 10, 0,
 
-		30, 10, 0,
-		-30, -10, 0,
-		30, -10, 0
+	static const GLfloat vertex_buffer_data2 [] = {
+		-30, 20, 0,
+		-30, -20, 0,
+		30, 20, 0,
+
+		30, 20, 0,
+		-30, -20, 0,
+		30, -20, 0
 	};
 	woodlogs[1] = create3DObject(GL_TRIANGLES, 6, vertex_buffer_data2, color_buffer_data, GL_FILL, 0, 0, 25);
 
@@ -562,10 +564,18 @@ void draw ()
 	// Pop matrix to undo transformations till last push matrix instead of recomputing model matrix
 	// glPopMatrix ();
 	Matrices.model = glm::mat4(1.0f);
+	glm::mat4 translatePig = glm::translate(glm::vec3((double)50,(double)200-cannonball_size,0));
+	Matrices.model *= translatePig;
+	MVP = VP  * Matrices.model; 
+	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+	draw3DObject(pigs[0]);
+	
+	Matrices.model = glm::mat4(1.0f);
 	MVP = VP * Matrices.model;
 	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
 	draw3DObject(gameFloor);
-	
+
+
 	Matrices.model = glm::mat4(1.0f);
 	glm::mat4 translateWoodlog,rotateWoodlog;
 	translateWoodlog = glm::translate(glm::vec3(0,170,0));
@@ -583,6 +593,13 @@ void draw ()
 	MVP = VP * Matrices.model;
 	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
 	draw3DObject(woodlogs[0]);
+
+	Matrices.model = glm::mat4(1.0f);
+	translateWoodlog = glm::translate(glm::vec3(300,180,0));
+	Matrices.model *= translateWoodlog;
+	MVP = VP * Matrices.model;
+	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+	draw3DObject(woodlogs[1]);
 
 
 	Matrices.model = glm::mat4(1.0f);
@@ -716,9 +733,9 @@ void initGL (GLFWwindow* window, int width, int height)
 	// Create the models
 	// Generate the VAO, VBOs, vertices data & copy into the array buffer
 	createCannonball ();
-	printf("Hemmlo");
 	createGameFloor ();
 	createWoodLogs();
+	createPig();
 
 	// Create and compile our GLSL program from the shaders
 	programID = LoadShaders( "Sample_GL.vert", "Sample_GL.frag" );
