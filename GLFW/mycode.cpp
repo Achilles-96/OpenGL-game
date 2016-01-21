@@ -13,6 +13,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 
+#define GAME_BIRD 0
+#define GAME_WOOD 1
+#define GAME_PIG 2
+
+
 using namespace std;
 
 class VAO {
@@ -28,6 +33,8 @@ class VAO {
 		double centery;
 		double radius;
 		double mass;
+		int type;
+		int dead;
 
 		VAO(){
 		}
@@ -134,7 +141,7 @@ void quit(GLFWwindow *window)
 
 
 /* Generate VAO, VBOs and return VAO handle */
-VAO* create3DObject (GLenum primitive_mode, int numVertices, const GLfloat* vertex_buffer_data, const GLfloat* color_buffer_data, double centerx, double centery, double radius, GLenum fill_mode=GL_FILL )
+VAO* create3DObject (GLenum primitive_mode, int numVertices, int type, const GLfloat* vertex_buffer_data, const GLfloat* color_buffer_data, double centerx, double centery, double radius, GLenum fill_mode=GL_FILL )
 {
 	VAO* vao = new  VAO();
 	vao->PrimitiveMode = primitive_mode;
@@ -144,6 +151,8 @@ VAO* create3DObject (GLenum primitive_mode, int numVertices, const GLfloat* vert
 	vao->centerx = centerx;
 	vao->centery = centery;
 	vao->radius = radius;
+	vao->type = type;
+	vao->dead = 0;
 
 	// Create Vertex Array Object
 	// Should be done after CreateWindow and before any other GL calls
@@ -187,7 +196,7 @@ VAO* create3DObject (GLenum primitive_mode, int numVertices, const GLfloat* vert
 		color_buffer_data [3*i + 2] = blue;
 	}
 
-	return create3DObject(primitive_mode, numVertices, vertex_buffer_data, color_buffer_data, centerx, centery, radius, fill_mode);
+	return create3DObject(primitive_mode, numVertices, 10, vertex_buffer_data, color_buffer_data, centerx, centery, radius, fill_mode);
 }
 
 /* Render the VBOs handled by VAO */
@@ -359,31 +368,35 @@ void createPig ()
 {
 	// GL3 accepts only Triangles. Quads are not supported
 	double n=30;
-	static GLfloat vertex_buffer_data[9*30+2*3];
-	static GLfloat color_buffer_data[9*30+2*3];
+	static GLfloat vertex_buffer_data[3][9*30+2*3];
+	static GLfloat color_buffer_data[3][9*30+2*3];
+	double sizea[3]={18 + 5, 23 +5 , 20 + 5},sizeb[3]={18, 23, 20};
 	float angle=0;
-	for(int i=0;i<n;i++){
-		vertex_buffer_data[9*i] = vertex_buffer_data[9*i+1] = vertex_buffer_data[9*i+2] = 0;
-		vertex_buffer_data[9*i+3]=(cannonball_size+5)*cos(angle*M_PI/180.0f);
-		vertex_buffer_data[9*i+4]=cannonball_size*sin(angle*M_PI/180.0f);
-		vertex_buffer_data[9*i+5]=0;
-		angle += 360.0f/n;
-		vertex_buffer_data[9*i+6]=(cannonball_size+5)*cos(angle*M_PI/180.0f);
-		vertex_buffer_data[9*i+7]=cannonball_size*sin(angle*M_PI/180.0f);
-		vertex_buffer_data[9*i+8]=0;
-		
-		color_buffer_data[9*i] = 114.0f/255.0f;
-		color_buffer_data[9*i+1] = 194.0f/255.0f;
-		color_buffer_data[9*i+2] = 65.0f/255.0f;
-		color_buffer_data[9*i+3] = 114.0f/255.0f;
-		color_buffer_data[9*i+4] = 194.0f/255.0f;
-		color_buffer_data[9*i+5] = 65.0f/255.0f;
-		color_buffer_data[9*i+6] = 114.0f/255.0f;
-		color_buffer_data[9*i+7] = 194.0f/255.0f;
-		color_buffer_data[9*i+8] = 65.0f/255.0f;
-	}
+	for(int j=0;j<3;j++)
+		for(int i=0;i<n;i++){
+			vertex_buffer_data[j][9*i] = vertex_buffer_data[j][9*i+1] = vertex_buffer_data[j][9*i+2] = 0;
+			vertex_buffer_data[j][9*i+3]=sizea[j]*cos(angle*M_PI/180.0f);
+			vertex_buffer_data[j][9*i+4]=sizeb[j]*sin(angle*M_PI/180.0f);
+			vertex_buffer_data[j][9*i+5]=0;
+			angle += 360.0f/n;
+			vertex_buffer_data[j][9*i+6]=sizea[j]*cos(angle*M_PI/180.0f);
+			vertex_buffer_data[j][9*i+7]=sizeb[j]*sin(angle*M_PI/180.0f);
+			vertex_buffer_data[j][9*i+8]=0;
+
+			color_buffer_data[j][9*i] = 114.0f/255.0f;
+			color_buffer_data[j][9*i+1] = 194.0f/255.0f;
+			color_buffer_data[j][9*i+2] = 65.0f/255.0f;
+			color_buffer_data[j][9*i+3] = 114.0f/255.0f;
+			color_buffer_data[j][9*i+4] = 194.0f/255.0f;
+			color_buffer_data[j][9*i+5] = 65.0f/255.0f;
+			color_buffer_data[j][9*i+6] = 114.0f/255.0f;
+			color_buffer_data[j][9*i+7] = 194.0f/255.0f;
+			color_buffer_data[j][9*i+8] = 65.0f/255.0f;
+		}
 	// create3DObject creates and returns a handle to a VAO that can be used later
-	pigs[0] = create3DObject(GL_TRIANGLES, n*3 , vertex_buffer_data, color_buffer_data, GL_FILL, 0, 0, cannonball_size);
+	pigs[0] = create3DObject(GL_TRIANGLES, n*3 ,GAME_PIG, vertex_buffer_data[0], color_buffer_data[0], 50, 200-sizeb[0], sizea[0], GL_FILL);
+	pigs[1] = create3DObject(GL_TRIANGLES, n*3 ,GAME_PIG, vertex_buffer_data[1], color_buffer_data[1], 300, 200-40-sizeb[1], sizea[1], GL_FILL);
+	pigs[2] = create3DObject(GL_TRIANGLES, n*3 ,GAME_PIG, vertex_buffer_data[2], color_buffer_data[2], 400, 200-sizeb[2], sizea[2], GL_FILL);
 
 }
 // Creates the rectangle object used in this sample code
@@ -431,18 +444,18 @@ void createCannonball ()
 	vertex_buffer_data[9*20+6] = cannonball_size*cos((360.0f/n) *M_PI/180.0f);
 	vertex_buffer_data[9*20+7] = -cannonball_size*sin((360.0f/n) *M_PI/180.0f);
 	vertex_buffer_data[9*20+8] = 0;
-/*	vertex_buffer_data[9*20+9] = cannonball_size*cos((360.0f/n) *M_PI/180.0f);
-	vertex_buffer_data[9*20+10] = cannonball_size*sin((360.0f/n) *M_PI/180.0f);
-	vertex_buffer_data[9*20+11] = 0;
-	vertex_buffer_data[9*20+12] = cannonball_size;//cos((360.0f/n) *M_PI/180.0f);
-	vertex_buffer_data[9*20+13] = 0;//cannonball_size*sin((360.0f/n) *M_PI/180.0f);
-	vertex_buffer_data[9*20+14] = 0;
-	vertex_buffer_data[9*20+15] = cannonball_size+10;
-	vertex_buffer_data[9*20+16] = 0;
-	vertex_buffer_data[9*20+17] = 0;
-*/
+	/*	vertex_buffer_data[9*20+9] = cannonball_size*cos((360.0f/n) *M_PI/180.0f);
+		vertex_buffer_data[9*20+10] = cannonball_size*sin((360.0f/n) *M_PI/180.0f);
+		vertex_buffer_data[9*20+11] = 0;
+		vertex_buffer_data[9*20+12] = cannonball_size;//cos((360.0f/n) *M_PI/180.0f);
+		vertex_buffer_data[9*20+13] = 0;//cannonball_size*sin((360.0f/n) *M_PI/180.0f);
+		vertex_buffer_data[9*20+14] = 0;
+		vertex_buffer_data[9*20+15] = cannonball_size+10;
+		vertex_buffer_data[9*20+16] = 0;
+		vertex_buffer_data[9*20+17] = 0;
+		*/
 	// create3DObject creates and returns a handle to a VAO that can be used later
-	cannonball = create3DObject(GL_TRIANGLES, n*3 + 2*3, vertex_buffer_data, color_buffer_data, GL_FILL, 0, 0, cannonball_size);
+	cannonball = create3DObject(GL_TRIANGLES, n*3 + 2*3, GAME_BIRD, vertex_buffer_data, color_buffer_data, GL_FILL, 0, 0, cannonball_size);
 }
 
 void createGameFloor ()
@@ -473,7 +486,7 @@ void createGameFloor ()
 		gred+=2.5f/255.0f;
 
 	}
-	gameFloor = create3DObject(GL_TRIANGLES, 20*6, vertex_buffer_data, color_buffer_data, GL_FILL, fireposx, fireposy, 25);
+	gameFloor = create3DObject(GL_TRIANGLES, 20*6, GAME_WOOD, vertex_buffer_data, color_buffer_data, GL_FILL, fireposx, fireposy, 25);
 }
 
 void createWoodLogs(){
@@ -495,18 +508,18 @@ void createWoodLogs(){
 		228.0f/255.0f,142.0f/255.0f,57.0f/255.0f,
 		228.0f/255.0f,142.0f/255.0f,57.0f/255.0f
 	};
-	woodlogs[0] = create3DObject(GL_TRIANGLES, 6, vertex_buffer_data, color_buffer_data, GL_FILL, 0, 0, 25);
+	woodlogs[0] = create3DObject(GL_TRIANGLES, 6, GAME_WOOD, vertex_buffer_data, color_buffer_data, GL_FILL, 0, 0, 25);
 
 	static const GLfloat vertex_buffer_data2 [] = {
-		-30, 20, 0,
-		-30, -20, 0,
-		30, 20, 0,
+		-35, 20, 0,
+		-35, -20, 0,
+		35, 20, 0,
 
-		30, 20, 0,
-		-30, -20, 0,
-		30, -20, 0
+		35, 20, 0,
+		-35, -20, 0,
+		35, -20, 0
 	};
-	woodlogs[1] = create3DObject(GL_TRIANGLES, 6, vertex_buffer_data2, color_buffer_data, GL_FILL, 0, 0, 25);
+	woodlogs[1] = create3DObject(GL_TRIANGLES, 6, GAME_WOOD, vertex_buffer_data2, color_buffer_data, GL_FILL, 0, 0, 25);
 
 }
 
@@ -563,13 +576,22 @@ void draw ()
 
 	// Pop matrix to undo transformations till last push matrix instead of recomputing model matrix
 	// glPopMatrix ();
-	Matrices.model = glm::mat4(1.0f);
-	glm::mat4 translatePig = glm::translate(glm::vec3((double)50,(double)200-cannonball_size,0));
-	Matrices.model *= translatePig;
-	MVP = VP  * Matrices.model; 
-	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
-	draw3DObject(pigs[0]);
-	
+	for(int i=0;i<3;i++){
+		if(!pigs[i]->dead){
+			double x1 = cannonball->centerx,y1 = cannonball->centery, x2 = pigs[i]->centerx, y2 = pigs[i]->centery;
+			if(pigs[i]->radius + cannonball->radius > sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)))
+				pigs[i]->dead = 1;
+
+			Matrices.model = glm::mat4(1.0f);
+			glm::mat4 translatePig = glm::translate(glm::vec3(pigs[i]->centerx,pigs[i]->centery,0));
+			Matrices.model *= translatePig;
+			MVP = VP  * Matrices.model; 
+			glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+			draw3DObject(pigs[i]);
+
+		}
+	}
+
 	Matrices.model = glm::mat4(1.0f);
 	MVP = VP * Matrices.model;
 	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
@@ -600,14 +622,6 @@ void draw ()
 	MVP = VP * Matrices.model;
 	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
 	draw3DObject(woodlogs[1]);
-
-
-	Matrices.model = glm::mat4(1.0f);
-	translateWoodlog = glm::translate(glm::vec3(0,135,0));
-	Matrices.model *= translateWoodlog;
-	MVP = VP * Matrices.model;
-	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
-	//draw3DObject(woodlogs[1]);
 
 
 	Matrices.model = glm::mat4(1.0f);
