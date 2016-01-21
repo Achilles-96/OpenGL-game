@@ -218,7 +218,7 @@ void draw3DObject (VAO* vao)
  **************************/
 
 int pressed_state = 0, collision_state=0;
-double curx,cury,initx,inity,speedx,speedy,strength=0.1,prevx,prevy,cannonball_size=18;
+double curx,cury,initx,inity,speedx,speedy,strength=0.5,prevx,prevy,cannonball_size=18;
 double fireposx=-400,fireposy=100;
 double pivotx=10,pivoty=200,angular_v,angle;
 VAO  *cannonball, *gameFloor, *woodlogs[6];
@@ -304,6 +304,11 @@ void mouseButton (GLFWwindow* window, int button, int action, int mods)
 				if(pressed_state==1){
 					pressed_state=3;
 
+					if(sqrt((curx-initx)*(curx-initx)+(cury-inity)*(cury-inity)) > 30){
+						double angle_present = -M_PI+atan2(inity-cury,initx-curx);
+						curx = initx + 30*cos(angle_present);
+						cury = inity + 30*sin(angle_present);
+					}
 					speedx=(initx-curx)*strength;
 					speedy=(inity-cury)*strength;
 
@@ -598,9 +603,14 @@ void draw ()
 		cannonball->radius = cannonball_size;
 	}
 	else if(pressed_state==1){
-		translateRectangle = glm::translate (glm::vec3(fireposx, fireposy, 0));        // glTranslatef
-		cannonball->centerx = fireposx;
-		cannonball->centery = fireposy;
+		if(sqrt((curx-initx)*(curx-initx)+(cury-inity)*(cury-inity)) > 30){
+			double angle_present = -M_PI+atan2(inity-cury,initx-curx);
+			curx = initx + 30*cos(angle_present);
+			cury = inity + 30*sin(angle_present);
+		}
+		translateRectangle = glm::translate (glm::vec3(curx, cury, 0));        // glTranslatef
+		cannonball->centerx = curx;
+		cannonball->centery = cury;
 		cannonball->radius = cannonball_size;
 	}
 	else {
@@ -613,11 +623,11 @@ void draw ()
 		collision_state=1;
 		angle = 0.1;
 		angular_v = speedx*0.2;
-		if(cannonball->centerx <= -10 -cannonball_size/2)
-			speedx = -speedx;
-		else
+		if(cannonball->centery < 140 && cannonball->centerx > -10 - cannonball_size/2 )
 			speedy = -speedy;
-		printf("%lf\n",angle);
+		else
+			speedx = -speedx;
+		//printf("%lf\n",angle);
 	}
 	if(pressed_state==3) 
 		rotateRectangle = glm::rotate((float)(atan2(-prevy+inity,-prevx+initx)), glm::vec3(0,0,1)); // rotate about vector (-1,1,1)
