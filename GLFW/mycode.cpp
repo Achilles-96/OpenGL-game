@@ -226,11 +226,12 @@ void draw3DObject (VAO* vao)
  * Customizable functions *
  **************************/
 
-int pressed_state = 0, collision_state=0;
+int pressed_state = 0, collision_state=0, zoominstate = 0, zoomoutstate = 0, panright = 0, panleft = 0, panup = 0, pandown = 0;
 double curx,cury,initx,inity,speedx,speedy,strength=0.5,prevx,prevy,cannonball_size=18,gravity=0.2;
 double fireposx=-400,fireposy=100;
 double pivotx=10,pivoty=200,angular_v[6],angle[6],woodspx[6];
 VAO  *cannonball, *gameFloor, *woodlogs[6], *pigs[5];
+float screenleft = -600, screenright = 600, screentop = -300, screenbotton = 300;
 /* Executed when a regular key is pressed/released/held-down */
 /* Prefered for Keyboard events */
 void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -243,7 +244,23 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
 				//rectangle_rot_status = !rectangle_rot_status;
 				break;
 			case GLFW_KEY_P:
+				zoominstate = 0;
 				//triangle_rot_status = !triangle_rot_status;
+				break;
+			case GLFW_KEY_M:
+				zoomoutstate = 0;
+				break;
+			case GLFW_KEY_A:
+				panleft = 0;
+				break;
+			case GLFW_KEY_D:
+				panright = 0;
+				break;
+			case GLFW_KEY_W:
+				panup = 0;
+				break;
+			case GLFW_KEY_S:
+				pandown = 0;
 				break;
 			case GLFW_KEY_X:
 				// do something ..
@@ -256,6 +273,24 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
 		switch (key) {
 			case GLFW_KEY_ESCAPE:
 				quit(window);
+				break;
+			case GLFW_KEY_P:
+				zoominstate=1;
+				break;
+			case GLFW_KEY_M:
+				zoomoutstate = 1;
+				break;
+			case GLFW_KEY_A:
+				panleft = 1;
+				break;
+			case GLFW_KEY_D:
+				panright = 1;
+				break;
+			case GLFW_KEY_W:
+				panup = 1;
+				break;
+			case GLFW_KEY_S:
+				pandown = 1;
 				break;
 			default:
 				break;
@@ -277,7 +312,8 @@ void keyboardChar (GLFWwindow* window, unsigned int key)
 }
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
-	curx=xpos-600,cury=ypos-300;
+	curx = ((screenright - screenleft)/1200.0f)*xpos + screenleft;
+	cury = ((screenbotton - screentop)/600.0f)*ypos + screentop;
 }
 
 int is_cannon_clicked(double mousex, double mousey) {
@@ -360,7 +396,7 @@ void reshapeWindow (GLFWwindow* window, int width, int height)
 	// Matrices.projection = glm::perspective (fov, (GLfloat) fbwidth / (GLfloat) fbheight, 0.1f, 500.0f);
 
 	// Ortho projection for 2D views
-	Matrices.projection = glm::ortho(-600.0f, 600.0f, 300.0f, -300.0f, 1.0f, 500.0f);
+	Matrices.projection = glm::ortho(screenleft, screenright, screenbotton, screentop, 1.0f, 500.0f);
 }
 
 
@@ -545,9 +581,9 @@ void draw ()
 	glm::vec3 up (0, 1, 0);
 
 	// Compute Camera matrix (view)
-	// Matrices.view = glm::lookAt( eye, target, up ); // Rotating Camera for 3D
+	//Matrices.view = glm::lookAt( eye, target, up ); // Rotating Camera for 3D
 	//  Don't change unless you are sure!!
-	Matrices.view = glm::lookAt(glm::vec3(0,0,3), glm::vec3(0,0,0), glm::vec3(0,1,0)); // Fixed camera for 2D (ortho) in XY plane
+	Matrices.view = glm::lookAt(glm::vec3(0,0,1), glm::vec3(0,0,0), glm::vec3(0,1,0)); // Fixed camera for 2D (ortho) in XY plane
 
 	// Compute ViewProject matrix as view/camera might not be changed for this frame (basic scenario)
 	//  Don't change unless you are sure!!
@@ -802,6 +838,41 @@ int main (int argc, char** argv)
 	/* Draw in loop */
 	while (!glfwWindowShouldClose(window)) {
 
+		if(panleft == 1 && screenleft >= -600 + 5){
+			screenleft -= 5;
+			screenright -= 5;
+		}
+		if(panright == 1 && screenright <= 600 - 5){
+			screenleft += 5;
+			screenright += 5;
+		}
+		if(panup == 1 && screentop >= -300 + 5){
+			screentop -= 5;
+			screenbotton -= 5;
+		}
+		if(pandown == 1 && screenbotton <= 300 - 5){
+			screentop += 5;
+			screenbotton += 5;
+		}
+
+		if(zoominstate == 1 && screenright-screenleft > 800) {
+				screenleft /= 1.02;
+				screenright /= 1.02;
+				screentop /= 1.02;
+				screenbotton /= 1.02;
+		}
+		if(zoomoutstate == 1 && screenright - screenleft < 1200) {
+			if(screenleft >= -600.0f/1.02f)
+				screenleft *= 1.02;
+			if(screenright <= 600.0f/1.02f)
+				screenright *= 1.02;
+			if(screentop >= -300.0f/1.02f)
+				screentop *= 1.02;
+			if(screenbotton <= 300.0f/1.02f)
+				screenbotton *= 1.02;
+		}
+		if(zoominstate == 1 || zoomoutstate == 1 || panleft == 1 || panright == 1 || panup == 1 || pandown == 1)
+			reshapeWindow(window, width, height);
 		// OpenGL Draw commands
 		draw();
 
