@@ -17,6 +17,7 @@
 #define GAME_WOOD_VERTICAL 1
 #define GAME_WOOD_HORIZONTAL 1
 #define GAME_PIG 2
+#define GAME_SCOREBOARD 3
 
 using namespace std;
 
@@ -230,8 +231,10 @@ int pressed_state = 0, collision_state=0, zoominstate = 0, zoomoutstate = 0, pan
 double curx,cury,initx,inity,speedx,speedy,strength=0.5,prevx,prevy,cannonball_size=18,gravity=0.2;
 double fireposx=-400,fireposy=100;
 double pivotx=10,pivoty=200,angular_v[6],angle[6],woodspx[6];
-VAO  *cannonball, *gameFloor, *woodlogs[6], *pigs[5];
+VAO  *cannonball, *gameFloor, *woodlogs[6], *pigs[5], *powerboard, *powerelement;
 float screenleft = -600, screenright = 600, screentop = -300, screenbotton = 300;
+
+double power = 0;
 /* Executed when a regular key is pressed/released/held-down */
 /* Prefered for Keyboard events */
 void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -344,6 +347,7 @@ void mouseButton (GLFWwindow* window, int button, int action, int mods)
 				angle[0]=0;
 				collision_state=0;
 				gravity = 0.2;
+				power = 0;
 			}
 			if (action == GLFW_RELEASE){
 				//triangle_rot_dir *= -1;
@@ -399,7 +403,71 @@ void reshapeWindow (GLFWwindow* window, int width, int height)
 	Matrices.projection = glm::ortho(screenleft, screenright, screenbotton, screentop, 1.0f, 500.0f);
 }
 
+void createPowerElement() {
+	static GLfloat vertex_buffer_data[] = {
+		-0.5, -15.0f*0.75, 0,
+		0.5, -15.0f*0.75f, 0,
+		-0.5, 15.0f*0.75f, 0,
 
+		0.5, -15.0f*0.75f, 0,
+		-0.5, 15.0f*0.75f, 0,
+		0.5, 15.0f*0.75f, 0
+	};
+	static GLfloat color_buffer_data[] = {
+		12.0f/255.0f,253.0f/255.0f,1.0f/255.0f,
+		12.0f/255.0f,253.0f/255.0f,1.0f/255.0f,
+		12.0f/255.0f,253.0f/255.0f,1.0f/255.0f,
+		12.0f/255.0f,253.0f/255.0f,1.0f/255.0f,
+		12.0f/255.0f,253.0f/255.0f,1.0f/255.0f,
+		12.0f/255.0f,253.0f/255.0f,1.0f/255.0f
+	};
+	powerelement = create3DObject(GL_TRIANGLES, 2*3 ,GAME_SCOREBOARD, vertex_buffer_data, color_buffer_data, -400 + 30, -270 +15, 30, GL_FILL);
+}
+
+void createPowerBoard(){
+	double leftoffset = -400;
+	double width = 110;
+	double topoffset = -240;
+	double height = 15;
+	double innerratio = 0.83;
+
+	static  GLfloat vertex_buffer_data[] = {
+		leftoffset - width, topoffset - height, 0,
+		leftoffset + width, topoffset - height, 0,
+		leftoffset - width, topoffset + height, 0,
+
+		leftoffset + width, topoffset - height, 0,
+		leftoffset - width, topoffset + height, 0,
+		leftoffset + width, topoffset + height, 0,
+
+		leftoffset - width * innerratio, topoffset - height * innerratio, 0,
+		leftoffset + width * innerratio, topoffset - height * innerratio, 0,
+		leftoffset - width * innerratio, topoffset + height * innerratio, 0,
+
+		leftoffset + width * innerratio, topoffset - height * innerratio, 0,
+		leftoffset - width * innerratio, topoffset + height * innerratio, 0,
+		leftoffset + width * innerratio, topoffset + height * innerratio, 0,
+		
+	};
+	static GLfloat color_buffer_data[] = {
+		228.0f/255.0f,142.0f/255.0f,57.0f/255.0f,
+		228.0f/255.0f,142.0f/255.0f,57.0f/255.0f,
+		228.0f/255.0f,142.0f/255.0f,57.0f/255.0f,
+		228.0f/255.0f,142.0f/255.0f,57.0f/255.0f,
+		228.0f/255.0f,142.0f/255.0f,57.0f/255.0f,
+		228.0f/255.0f,142.0f/255.0f,57.0f/255.0f,
+
+		9.0f/255.0f,41.0f/255.0f,59.0f/255.0f,
+		9.0f/255.0f,41.0f/255.0f,59.0f/255.0f,
+		9.0f/255.0f,41.0f/255.0f,59.0f/255.0f,
+		9.0f/255.0f,41.0f/255.0f,59.0f/255.0f,
+		9.0f/255.0f,41.0f/255.0f,59.0f/255.0f,
+		9.0f/255.0f,41.0f/255.0f,59.0f/255.0f
+
+	};
+
+	powerboard = create3DObject(GL_TRIANGLES, 4*3 ,GAME_SCOREBOARD, vertex_buffer_data, color_buffer_data, -400 + 30, -270 +15, 30, GL_FILL);
+}
 
 void createPig ()
 {
@@ -636,6 +704,11 @@ void draw ()
 	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
 	draw3DObject(gameFloor);
 
+	Matrices.model = glm::mat4(1.0f);
+	MVP = VP * Matrices.model;
+	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+	draw3DObject(powerboard);
+
 
 	Matrices.model = glm::mat4(1.0f);
 	glm::mat4 translateWoodlog,rotateWoodlog;
@@ -680,6 +753,7 @@ void draw ()
 			curx = initx + 30*cos(angle_present);
 			cury = inity + 30*sin(angle_present);
 		}
+		power = sqrt((curx-initx)*(curx-initx) + (cury-inity)*(cury-inity));
 		translateRectangle = glm::translate (glm::vec3(curx, cury, 0));        // glTranslatef
 		cannonball->centerx = curx;
 		cannonball->centery = cury;
@@ -720,6 +794,17 @@ void draw ()
 
 	// draw3DObject draws the VAO given to it using current MVP matrix
 	draw3DObject(cannonball);
+
+
+	Matrices.model = glm::mat4(1.0f);
+	glm::mat4 scalePower = glm::scale(glm::vec3(power*6,1,1));
+	glm::mat4 translatePower = glm::translate(glm::vec3(-400 - ( 90 - power * 3), -240, 0));
+	Matrices.model *= ( translatePower * scalePower);
+	MVP = VP * Matrices.model;
+	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+	draw3DObject(powerelement);
+
+
 	// Increment angles
 	float increments = 1;
 
@@ -734,6 +819,7 @@ void draw ()
 				angle[0]=0;
 				collision_state=0;
 				gravity = 0.2;
+				power = 0;
 			
 		}
 
@@ -802,6 +888,8 @@ void initGL (GLFWwindow* window, int width, int height)
 	createGameFloor ();
 	createWoodLogs();
 	createPig();
+	createPowerBoard();
+	createPowerElement();
 
 	// Create and compile our GLSL program from the shaders
 	programID = LoadShaders( "Sample_GL.vert", "Sample_GL.frag" );
