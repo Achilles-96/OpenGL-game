@@ -142,7 +142,7 @@ void quit(GLFWwindow *window)
 
 
 /* Generate VAO, VBOs and return VAO handle */
-VAO* create3DObject (GLenum primitive_mode, int numVertices, int type, const GLfloat* vertex_buffer_data, const GLfloat* color_buffer_data, double centerx, double centery, double radius, GLenum fill_mode=GL_FILL )
+VAO* create3DObject (GLenum primitive_mode, int numVertices, int type, const GLfloat* vertex_buffer_data, const GLfloat* color_buffer_data, double centerx, double centery, double radius, GLenum fill_mode )
 {
 	VAO* vao = new  VAO();
 	vao->PrimitiveMode = primitive_mode;
@@ -188,7 +188,7 @@ VAO* create3DObject (GLenum primitive_mode, int numVertices, int type, const GLf
 }
 
 /* Generate VAO, VBOs and return VAO handle - Common Color for all vertices */
-VAO* create3DObject (GLenum primitive_mode, int numVertices, const GLfloat* vertex_buffer_data, const GLfloat red, const GLfloat green, const GLfloat blue, double centerx, double centery, double radius, GLenum fill_mode=GL_FILL)
+VAO* create3DObject (GLenum primitive_mode, int numVertices, const GLfloat* vertex_buffer_data, const GLfloat red, const GLfloat green, const GLfloat blue, double centerx, double centery, double radius, GLenum fill_mode)
 {
 	GLfloat* color_buffer_data = new GLfloat [3*numVertices];
 	for (int i=0; i<numVertices; i++) {
@@ -230,8 +230,8 @@ void draw3DObject (VAO* vao)
 int pressed_state = 0, collision_state=0, zoominstate = 0, zoomoutstate = 0, panright = 0, panleft = 0, panup = 0, pandown = 0;
 double curx,cury,initx,inity,speedx,speedy,strength=0.5,prevx,prevy,cannonball_size=18,gravity=0.2;
 double fireposx=-400,fireposy=100;
-double pivotx=10,pivoty=200,angular_v[6],angle[6],woodspx[6];
-VAO  *cannonball, *gameFloor, *woodlogs[6], *pigs[5], *powerboard, *powerelement;
+double pivotx=-10,pivoty=-30,angular_v[6],angle[6],woodspx[6];
+VAO  *cannonball, *gameFloor, *woodlogs[6], *pigs[5], *powerboard, *powerelement, *catapult;
 float screenleft = -600, screenright = 600, screentop = -300, screenbotton = 300;
 
 double power = 0;
@@ -344,8 +344,6 @@ void mouseButton (GLFWwindow* window, int button, int action, int mods)
 			}
 			if(pressed_state==3){
 				pressed_state=0;
-				angle[0]=0;
-				collision_state=0;
 				gravity = 0.2;
 				power = 0;
 			}
@@ -469,15 +467,40 @@ void createPowerBoard(){
 	powerboard = create3DObject(GL_TRIANGLES, 4*3 ,GAME_SCOREBOARD, vertex_buffer_data, color_buffer_data, -400 + 30, -270 +15, 30, GL_FILL);
 }
 
+void createCatapult()
+{
+	static GLfloat vertex_buffer_data[] = {
+		0, -15, 0,
+		-1, 0, 0,
+		0, 15, 0,
+
+		0, -15, 0,
+		0, 0, 0,
+		0, 15, 0
+	};
+
+	static GLfloat color_buffer_data[] = {
+		0,0,0,
+		0,0,0,
+		0,0,0,
+
+		156.0/255.0f,205.0f/255.0f,237.0f/255.0f,
+		156.0/255.0f,205.0f/255.0f,237.0f/255.0f,
+		156.0/255.0f,205.0f/255.0f,237.0f/255.0f
+	};
+
+	catapult = create3DObject(GL_TRIANGLES, 2*3 ,GAME_BIRD, vertex_buffer_data, color_buffer_data, 50, 200, 0, GL_LINE);
+}
+
 void createPig ()
 {
 	// GL3 accepts only Triangles. Quads are not supported
 	double n=30;
-	static GLfloat vertex_buffer_data[3][9*30+2*3];
-	static GLfloat color_buffer_data[3][9*30+2*3];
-	double sizea[3]={18 + 5, 23 +5 , 20 + 5},sizeb[3]={18, 23, 20};
+	static GLfloat vertex_buffer_data[4][9*30+2*3];
+	static GLfloat color_buffer_data[4][9*30+2*3];
+	double sizea[4]={18 + 5, 23 +5 , 20 + 5, 25 + 5},sizeb[4]={18, 23, 20, 25};
 	float angle=0;
-	for(int j=0;j<3;j++)
+	for(int j=0;j<4;j++)
 		for(int i=0;i<n;i++){
 			vertex_buffer_data[j][9*i] = vertex_buffer_data[j][9*i+1] = vertex_buffer_data[j][9*i+2] = 0;
 			vertex_buffer_data[j][9*i+3]=sizea[j]*cos(angle*M_PI/180.0f);
@@ -500,9 +523,9 @@ void createPig ()
 		}
 	// create3DObject creates and returns a handle to a VAO that can be used later
 	pigs[0] = create3DObject(GL_TRIANGLES, n*3 ,GAME_PIG, vertex_buffer_data[0], color_buffer_data[0], 50, 200-sizeb[0], sizea[0], GL_FILL);
-	pigs[1] = create3DObject(GL_TRIANGLES, n*3 ,GAME_PIG, vertex_buffer_data[1], color_buffer_data[1], 300, 200-40-sizeb[1], sizea[1], GL_FILL);
-	pigs[2] = create3DObject(GL_TRIANGLES, n*3 ,GAME_PIG, vertex_buffer_data[2], color_buffer_data[2], 400, 200-sizeb[2], sizea[2], GL_FILL);
-
+	pigs[1] = create3DObject(GL_TRIANGLES, n*3 ,GAME_PIG, vertex_buffer_data[1], color_buffer_data[1], 345, 200-50-sizeb[1], sizea[1], GL_FILL);
+	pigs[2] = create3DObject(GL_TRIANGLES, n*3 ,GAME_PIG, vertex_buffer_data[2], color_buffer_data[2], 415, 200-sizeb[2], sizea[2], GL_FILL);
+	pigs[3] = create3DObject(GL_TRIANGLES, n*3 ,GAME_PIG, vertex_buffer_data[3], color_buffer_data[3], 280, 200-50-40-sizeb[3], sizea[2], GL_FILL);
 }
 // Creates the rectangle object used in this sample code
 void createCannonball ()
@@ -560,7 +583,7 @@ void createCannonball ()
 		vertex_buffer_data[9*20+17] = 0;
 		*/
 	// create3DObject creates and returns a handle to a VAO that can be used later
-	cannonball = create3DObject(GL_TRIANGLES, n*3 + 2*3, GAME_BIRD, vertex_buffer_data, color_buffer_data, GL_FILL, 0, 0, cannonball_size);
+	cannonball = create3DObject(GL_TRIANGLES, n*3 + 2*3, GAME_BIRD, vertex_buffer_data, color_buffer_data,  0, 0, cannonball_size, GL_FILL);
 }
 
 void createGameFloor ()
@@ -593,6 +616,7 @@ void createGameFloor ()
 	gameFloor = create3DObject(GL_TRIANGLES, 20*6, GAME_WOOD_HORIZONTAL, vertex_buffer_data, color_buffer_data, GL_FILL, fireposx, fireposy, 25);
 }
 
+double woodsizex[3],woodsizey[3];
 void createWoodLogs(){
 	static const GLfloat vertex_buffer_data [] = {
 		-10, 30, 0,
@@ -623,7 +647,38 @@ void createWoodLogs(){
 		-35, -20, 0,
 		35, -20, 0
 	};
-	woodlogs[1] = create3DObject(GL_TRIANGLES, 6, GAME_WOOD_HORIZONTAL, vertex_buffer_data2, color_buffer_data, GL_FILL, 0, 0, 25);
+
+	woodsizex[1] = 35;
+	woodsizey[1] = 20;
+	woodlogs[1] = create3DObject(GL_TRIANGLES, 6, GAME_WOOD_HORIZONTAL, vertex_buffer_data2, color_buffer_data, 280, 130, 25, GL_FILL);
+	
+	static const GLfloat vertex_buffer_data3 [] = {
+		-75, 25, 0,
+		-75, -25, 0,
+		75, 25, 0,
+
+		75, 25, 0,
+		-75, -25, 0,
+		75, -25, 0
+	};
+	static const GLfloat color_buffer_data3 [] = {
+		212.0f/255.0f,121.0f/255.0f,52.0f/255.0f,
+		212.0f/255.0f,121.0f/255.0f,52.0f/255.0f,
+		212.0f/255.0f,121.0f/255.0f,52.0f/255.0f,
+		212.0f/255.0f,121.0f/255.0f,52.0f/255.0f,
+		212.0f/255.0f,121.0f/255.0f,52.0f/255.0f,
+		212.0f/255.0f,121.0f/255.0f,52.0f/255.0f
+		/*189.0f/255.0f,116.0f/255.0f,79.0f/255.0f,
+		189.0f/255.0f,116.0f/255.0f,79.0f/255.0f,
+		189.0f/255.0f,116.0f/255.0f,79.0f/255.0f,
+		189.0f/255.0f,116.0f/255.0f,79.0f/255.0f,
+		189.0f/255.0f,116.0f/255.0f,79.0f/255.0f,
+		189.0f/255.0f,116.0f/255.0f,79.0f/255.0f*/
+	};
+
+	woodsizex[2] = 75;
+	woodsizey[2] = 25;
+	woodlogs[2] = create3DObject(GL_TRIANGLES, 6, GAME_WOOD_HORIZONTAL, vertex_buffer_data3, color_buffer_data3, 310, 175, 25, GL_FILL);
 
 }
 
@@ -680,7 +735,7 @@ void draw ()
 
 	// Pop matrix to undo transformations till last push matrix instead of recomputing model matrix
 	// glPopMatrix ();
-	for(int i=0;i<3;i++){
+	for(int i=0;i<4;i++){
 		if(!pigs[i]->dead){
 			double x1 = cannonball->centerx,y1 = cannonball->centery, x2 = pigs[i]->centerx, y2 = pigs[i]->centery;
 			if(pigs[i]->radius + cannonball->radius > sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1))){
@@ -714,15 +769,28 @@ void draw ()
 	glm::mat4 translateWoodlog,rotateWoodlog;
 	translateWoodlog = glm::translate(glm::vec3(0,170,0));
 	if(collision_state==1){
-		translateWoodlog = glm::translate(glm::vec3(10,200,0));
-		glm::mat4 translateWoodlog2 = glm::translate(glm::vec3(-10,-30,0));
-		rotateWoodlog = glm::rotate((float)(angle[0]*M_PI/180.0f), glm::vec3(0,0,1));
-		angle[0] += angular_v[0];
-		angular_v[0] += 0.3;
-		angle[0] = min(angle[0],90.0);
-		Matrices.model *= (translateWoodlog*rotateWoodlog*translateWoodlog2);
-		if(angle[0] >= 45)
-			pigs[0]->dead = 1;
+		if(pivotx == -10){
+			translateWoodlog = glm::translate(glm::vec3(10,200,0));
+			glm::mat4 translateWoodlog2 = glm::translate(glm::vec3(pivotx,pivoty,0));
+			rotateWoodlog = glm::rotate((float)(angle[0]*M_PI/180.0f), glm::vec3(0,0,1));
+			angle[0] += angular_v[0];
+			angular_v[0] += 0.3;
+			angle[0] = min(angle[0],90.0);
+			Matrices.model *= (translateWoodlog*rotateWoodlog*translateWoodlog2);
+			if(angle[0] >= 45)
+				pigs[0]->dead = 1;
+		}
+		else{
+			translateWoodlog = glm::translate(glm::vec3(-10,200,0));
+			glm::mat4 translateWoodlog2 = glm::translate(glm::vec3(pivotx,pivoty,0));
+			rotateWoodlog = glm::rotate((float)(angle[0]*M_PI/180.0f), glm::vec3(0,0,1));
+			angle[0] -= angular_v[0];
+			angular_v[0] += 0.3;
+			angle[0] = max(angle[0],-90.0);
+			Matrices.model *= (translateWoodlog*rotateWoodlog*translateWoodlog2);
+			if(angle[0] >= 45)
+				pigs[0]->dead = 1;
+		}
 	}
 	else
 		Matrices.model *= translateWoodlog;
@@ -731,12 +799,39 @@ void draw ()
 	draw3DObject(woodlogs[0]);
 
 	Matrices.model = glm::mat4(1.0f);
-	translateWoodlog = glm::translate(glm::vec3(300,180,0));
+	translateWoodlog = glm::translate(glm::vec3(woodlogs[1]->centerx,woodlogs[1]->centery,0));
 	Matrices.model *= translateWoodlog;
 	MVP = VP * Matrices.model;
 	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
 	draw3DObject(woodlogs[1]);
+	
+	Matrices.model = glm::mat4(1.0f);
+	translateWoodlog = glm::translate(glm::vec3(woodlogs[2]->centerx,woodlogs[2]->centery,0));
+	Matrices.model *= translateWoodlog;
+	MVP = VP * Matrices.model;
+	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+	draw3DObject(woodlogs[2]);
 
+
+	if(pressed_state==1)
+		if(sqrt((curx-initx)*(curx-initx)+(cury-inity)*(cury-inity)) > 70){
+			double angle_present = -M_PI+atan2(inity-cury,initx-curx);
+			curx = initx + 70*cos(angle_present);
+			cury = inity + 70*sin(angle_present);
+		}
+
+	Matrices.model = glm::mat4(1.0f);
+	glm::mat4 translateCatapult = glm::translate(glm::vec3(fireposx, fireposy, 0));
+	glm::mat4 rotateCatapult = glm::rotate((float)(atan2(-cury+inity,-curx+initx)), glm::vec3(0,0,1));
+	glm::mat4 scaleCatapult = glm::scale(glm::vec3(power + cannonball_size,1,1));
+	if(pressed_state == 1)
+		Matrices.model *= (translateCatapult * rotateCatapult * scaleCatapult);
+	else
+		Matrices.model *= translateCatapult;
+	MVP = VP * Matrices.model;
+	glLineWidth(5.0);
+	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
+	draw3DObject(catapult);
 
 	Matrices.model = glm::mat4(1.0f);
 	glm::mat4 translateRectangle;// = glm::translate (glm::vec3(curx, cury, 0));        // glTranslatef
@@ -748,10 +843,10 @@ void draw ()
 		cannonball->radius = cannonball_size;
 	}
 	else if(pressed_state==1){
-		if(sqrt((curx-initx)*(curx-initx)+(cury-inity)*(cury-inity)) > 30){
+		if(sqrt((curx-initx)*(curx-initx)+(cury-inity)*(cury-inity)) > 70){
 			double angle_present = -M_PI+atan2(inity-cury,initx-curx);
-			curx = initx + 30*cos(angle_present);
-			cury = inity + 30*sin(angle_present);
+			curx = initx + 70*cos(angle_present);
+			cury = inity + 70*sin(angle_present);
 		}
 		power = sqrt((curx-initx)*(curx-initx) + (cury-inity)*(cury-inity));
 		translateRectangle = glm::translate (glm::vec3(curx, cury, 0));        // glTranslatef
@@ -765,22 +860,45 @@ void draw ()
 		cannonball->centery = inity;
 		cannonball->radius = cannonball_size;
 	}
-	if(cannonball->centerx >= -10 - cannonball_size && cannonball->centerx <= -10 + 20 + cannonball_size && cannonball->centery >= 140 - cannonball_size ){
+	if(collision_state == 0 && cannonball->centerx >= -10 - cannonball_size && cannonball->centerx <= -10 + 20 + cannonball_size && cannonball->centery >= 140 - cannonball_size ){
 		collision_state=1;
 		angle[0] = 0.1;
 		angular_v[0] = speedx*0.2;
-		if(cannonball->centery < 140 && cannonball->centerx > -10 - cannonball_size/2 )
+		if(cannonball->centerx > 10){
+			pivotx = 10;
+			angle[0] = -0.1;
+			angular_v[0] = -speedx*0.2;
+		}
+		if(cannonball->centery < 140 && cannonball->centerx > -10 - cannonball_size/2 && (cannonball->centerx < 10 + cannonball_size/2)){
 			speedy = -speedy;
-		else
+			inity = 140 - cannonball_size - 1;
+		}
+		else{
 			speedx = -speedx;
+		}
+		
 	}
+
+	for(int i=1;i<=2;i++)
+	if(cannonball->centerx >= woodlogs[i]->centerx - woodsizex[i] - cannonball_size && cannonball->centerx <= woodlogs[i]->centerx + woodsizex[i] + cannonball_size && cannonball->centery >= woodlogs[i]->centery - woodsizey[i] - cannonball_size) {
+		if(cannonball->centery < woodlogs[i]->centery - woodsizey[i] && cannonball->centerx > woodlogs[i]->centerx - woodsizex[i] - cannonball_size/2 ){
+			speedy = -0.8*speedy, speedx = 0.8*speedx;
+			inity = woodlogs[i]->centery - woodsizey[i] - cannonball_size - 1;
+		}
+		else {
+			speedx = -0.8*speedx, speedy = 0.8*speedy;
+			initx = woodlogs[i]->centerx - woodsizex[i] - cannonball_size - 1;
+		}
+		break;
+	}
+		/*	
 	if(cannonball->centerx >= 300 - 35 - cannonball_size && cannonball->centerx <= 300 - 35 + 60 + cannonball_size && cannonball->centery >= 160 - cannonball_size) {
 		if(cannonball->centery < 160 && cannonball->centerx > 300 - 35 - cannonball_size/2 )
 			speedy = -speedy;
 		else 
 			speedx = -speedx;
 	}
-			
+		*/	
 	if(pressed_state==3) 
 		rotateRectangle = glm::rotate((float)(atan2(-prevy+inity,-prevx+initx)), glm::vec3(0,0,1)); // rotate about vector (-1,1,1)
 	else
@@ -816,13 +934,10 @@ void draw ()
 			speedy=-0.8*speedy,speedx=0.7*speedx;
 		if(fabs(speedx)<=0.05&&fabs(speedy)<=1){
 				pressed_state=0;
-				angle[0]=0;
-				collision_state=0;
 				gravity = 0.2;
 				power = 0;
 			
 		}
-
 	}
 	//camera_rotation_angle++; // Simulating camera rotation
 	//triangle_rotation = triangle_rotation + increments*triangle_rot_dir*triangle_rot_status;
@@ -890,6 +1005,7 @@ void initGL (GLFWwindow* window, int width, int height)
 	createPig();
 	createPowerBoard();
 	createPowerElement();
+	createCatapult();
 
 	// Create and compile our GLSL program from the shaders
 	programID = LoadShaders( "Sample_GL.vert", "Sample_GL.frag" );
