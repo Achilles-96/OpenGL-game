@@ -52,7 +52,6 @@ struct GLMatrices {
 	glm::mat4 model;
 	glm::mat4 view;
 	GLuint MatrixID;
-	GLuint TexMatrixID; // For use with texture shader
 } Matrices;
 
 struct FTGLFont {
@@ -526,7 +525,6 @@ void reshapeWindow (GLFWwindow* window, int width, int height)
 	// Matrices.projection = glm::perspective (fov, (GLfloat) fbwidth / (GLfloat) fbheight, 0.1f, 500.0f);
 
 	// Ortho projection for 2D views
-//	screenleft = -screenleft, screenright = -screenright, screenbotton= - screenbotton, screentop = -screentop;
 	Matrices.projection = glm::ortho(screenleft, screenright, screenbotton, screentop, 1.0f, 500.0f);
 }
 
@@ -1141,7 +1139,7 @@ void draw ()
 	
 	// Render font on screen
 	static int fontScale = 0;
-	float fontScaleValue = 50 + 0.25*sinf(fontScale*M_PI/180.0f);
+	float fontScaleValue = 0.75 + 0.25*sinf(fontScale*M_PI/180.0f);
 	glm::vec3 fontColor = getRGBfromHue (fontScale);
 
 
@@ -1154,8 +1152,7 @@ void draw ()
 	Matrices.model = glm::mat4(1.0f);
 	glm::mat4 translateText = glm::translate(glm::vec3(-3,2,0));
 	glm::mat4 scaleText = glm::scale(glm::vec3(fontScaleValue,fontScaleValue,fontScaleValue));
-	glm::mat4 rotateText = glm::rotate((float)M_PI, glm::vec3(1,0,0));
-	Matrices.model *= (translateText * scaleText * rotateText);
+	Matrices.model *= (translateText * scaleText);
 	MVP = Matrices.projection * Matrices.view * Matrices.model;
 	// send font's MVP and font color to fond shaders
 	glUniformMatrix4fv(GL3Font.fontMatrixID, 1, GL_FALSE, &MVP[0][0]);
@@ -1265,7 +1262,6 @@ void initGL (GLFWwindow* window, int width, int height)
 	glDepthFunc (GL_LEQUAL);
 	
 	// Initialise FTGL stuff
-	//const char* fontfile = "UpsideDown.ttf";
 	const char* fontfile = "arial.ttf";
 	GL3Font.font = new FTExtrudeFont(fontfile); // 3D extrude style rendering
 
