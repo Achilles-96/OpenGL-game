@@ -3,6 +3,10 @@
 #include <fstream>
 #include <vector>
 #include <algorithm>
+#include <string>
+
+//#include <GL/gl.h>
+//#include <GL/glu.h>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -14,7 +18,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
 
 #define GAME_BIRD 0
 #define GAME_WOOD_VERTICAL 1
@@ -358,9 +361,11 @@ GLuint createTexture (const char* filename)
 int pressed_state = 0, collision_state=0, zoominstate = 0, zoomoutstate = 0, panright = 0, panleft = 0, panup = 0, pandown = 0;
 double curx,cury,initx,inity,speedx,speedy,strength=0.5,prevx,prevy,cannonball_size=18,gravity=0.2;
 double fireposx=-400,fireposy=100;
-double pivotx=-10,pivoty=-30,angular_v[6],angle[6],woodspx[6],pigspx[6], piginitx[6];
+double pivotx=-10,pivoty=-30,angular_v[6],angle[6],woodspx[6],pigspx[6], pigspy[6], piginitx[6];
 VAO  *cannonball, *gameFloor, *woodlogs[6], *pigs[5], *powerboard, *powerelement, *catapult;
 float screenleft = -600, screenright = 600, screentop = -300, screenbotton = 300;
+
+int score = 0;
 
 double power = 0;
 /* Executed when a regular key is pressed/released/held-down */
@@ -920,6 +925,7 @@ void draw ()
 
 	// Pop matrix to undo transformations till last push matrix instead of recomputing model matrix
 	// glPopMatrix ();
+	int cnt = 0;
 	for(int i=0;i<4;i++){
 		if(!pigs[i]->dead){
 			double x1 = cannonball->centerx,y1 = cannonball->centery, x2 = pigs[i]->centerx, y2 = pigs[i]->centery;
@@ -930,8 +936,9 @@ void draw ()
 			}
 
 			Matrices.model = glm::mat4(1.0f);
-			glm::mat4 translatePig = glm::translate(glm::vec3(pigs[i]->centerx + pigspx[i],pigs[i]->centery,0));
+			glm::mat4 translatePig = glm::translate(glm::vec3(pigs[i]->centerx + pigspx[i],pigs[i]->centery + pigspy[i],0));
 			pigs[i]->centerx += pigspx[i];
+			pigs[i]->centery += pigspy[i];
 			glm::mat4 rotatePig = glm::rotate((float)((pigs[i]->centerx-piginitx[i])/pigs[i]->radius),glm::vec3(0,0,1));
 			pigspx[i]/= 1.02;
 			Matrices.model *= (translatePig*rotatePig);
@@ -940,6 +947,8 @@ void draw ()
 			draw3DObject(pigs[i]);
 
 		}
+		else
+			cnt++;
 	}
 
 	Matrices.model = glm::mat4(1.0f);
@@ -1059,18 +1068,18 @@ void draw ()
 			angular_v[0] = -speedx*0.2;
 		}
 		if(cannonball->centery < 140 && cannonball->centerx > -10 - cannonball_size/2 && (cannonball->centerx < 10 + cannonball_size/2)){
-			speedy = -speedy;
+			speedy = -0.5*speedy;
 			inity = 140 - cannonball_size - 1;
 		}
 		else{
-			speedx = -speedx;
+			speedx = -0.5*speedx;
 		}
 	}
 
 	for(int i=1;i<=2;i++)
 		if(cannonball->centerx >= woodlogs[i]->centerx - woodsizex[i] - cannonball_size && cannonball->centerx <= woodlogs[i]->centerx + woodsizex[i] + cannonball_size && cannonball->centery >= woodlogs[i]->centery - woodsizey[i] - cannonball_size) {
 			if(cannonball->centery < woodlogs[i]->centery - woodsizey[i] && cannonball->centerx > woodlogs[i]->centerx - woodsizex[i] - cannonball_size/2 ){
-				speedy = -0.8*speedy, speedx = 0.8*speedx;
+				speedy = -0.25*speedy, speedx = 0.25*speedx;
 				inity = woodlogs[i]->centery - woodsizey[i] - cannonball_size - 1;
 			}
 			else {
@@ -1083,7 +1092,7 @@ void draw ()
 					woodspx[1] = woodspx[2] * 0.5;
 				}
 
-				speedx = -0.8*speedx, speedy = 0.8*speedy;
+				speedx = -0.25*speedx, speedy = 0.25*speedy;
 				initx = woodlogs[i]->centerx - woodsizex[i] - cannonball_size - 1;
 			}
 
@@ -1131,7 +1140,7 @@ void draw ()
 		inity=min(200-cannonball_size,inity);
 		if(inity==200-cannonball_size)
 			speedy=-0.8*speedy,speedx=0.7*speedx;
-		if(fabs(speedx)<=0.05&&fabs(speedy)<=1){
+		if(fabs(speedx)<=0.05&&fabs(speedy)<=0.05){
 				pressed_state=0;
 				gravity = 0.2;
 				power = 0;
@@ -1140,9 +1149,10 @@ void draw ()
 	}
 	
 	// Render font on screen
-	static int fontScale = 0;
+	static int fontScale = 1;
 	float fontScaleValue = 50 + 0.25*sinf(fontScale*M_PI/180.0f);
-	glm::vec3 fontColor = getRGBfromHue (fontScale);
+	//rgb(227,245,255)
+	glm::vec3 fontColor = glm::vec3(227.0f/255.0f,245.0f/255.0f,255.0f/255.0f);//getRGBfromHue (fontScale);
 
 
 
@@ -1152,7 +1162,7 @@ void draw ()
 
 	// Transform the text
 	Matrices.model = glm::mat4(1.0f);
-	glm::mat4 translateText = glm::translate(glm::vec3(-3,2,0));
+	glm::mat4 translateText = glm::translate(glm::vec3(400,-250,0));
 	glm::mat4 scaleText = glm::scale(glm::vec3(fontScaleValue,fontScaleValue,fontScaleValue));
 	glm::mat4 rotateText = glm::rotate((float)M_PI, glm::vec3(1,0,0));
 	Matrices.model *= (translateText * scaleText * rotateText);
@@ -1160,9 +1170,14 @@ void draw ()
 	// send font's MVP and font color to fond shaders
 	glUniformMatrix4fv(GL3Font.fontMatrixID, 1, GL_FALSE, &MVP[0][0]);
 	glUniform3fv(GL3Font.fontColorID, 1, &fontColor[0]);
+	
+	score = cnt * 100;
+	//string str = to_string(score);
+	char str[10];
+	sprintf(str,"SCORE: %d",score);
 
 	// Render font
-	GL3Font.font->Render("Round n Round we go !!");
+	GL3Font.font->Render(str);
 	//camera_rotation_angle++; // Simulating camera rotation
 	//triangle_rotation = triangle_rotation + increments*triangle_rot_dir*triangle_rot_status;
 	// rectangle_rotation = rectangle_rotation + increments*rectangle_rot_dir*rectangle_rot_status;
