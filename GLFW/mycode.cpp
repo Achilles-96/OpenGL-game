@@ -359,8 +359,9 @@ GLuint createTexture (const char* filename)
  **************************/
 
 int pressed_state = 0, collision_state=0, zoominstate = 0, zoomoutstate = 0, panright = 0, panleft = 0, panup = 0, pandown = 0;
+int keyboard_pressed_statex = 0, keyboard_pressed_statey = 0;
 double curx,cury,initx,inity,speedx,speedy,strength=0.5,prevx,prevy,cannonball_size=18,gravity=0.2;
-double fireposx=-380,fireposy=130;
+double fireposx=-380,fireposy=130, keyboardx, keyboardy;
 double pivotx=-10,pivoty=-30,angular_v[6],angle[6],woodspx[6],woodspy[6],pigspx[10], pigspy[10], piginitx[10];
 VAO  *cannonball, *gameFloor, *woodlogs[6], *pigs[10], *powerboard, *powerelement, *background, *catapult;
 float screenleft = -600, screenright = 600, screentop = -300, screenbotton = 300;
@@ -380,27 +381,33 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
 			case GLFW_KEY_C:
 				//rectangle_rot_status = !rectangle_rot_status;
 				break;
-			case GLFW_KEY_P:
+			case GLFW_KEY_KP_ADD:
 				zoominstate = 0;
 				//triangle_rot_status = !triangle_rot_status;
 				break;
-			case GLFW_KEY_M:
+			case GLFW_KEY_KP_SUBTRACT:
 				zoomoutstate = 0;
 				break;
-			case GLFW_KEY_A:
+			case GLFW_KEY_LEFT:
 				panleft = 0;
 				break;
-			case GLFW_KEY_D:
+			case GLFW_KEY_RIGHT:
 				panright = 0;
 				break;
-			case GLFW_KEY_W:
+			case GLFW_KEY_UP:
 				panup = 0;
 				break;
-			case GLFW_KEY_S:
+			case GLFW_KEY_DOWN:
 				pandown = 0;
 				break;
 			case GLFW_KEY_X:
 				// do something ..
+				break;
+			case GLFW_KEY_A:
+				keyboard_pressed_statex = 0;
+				break;
+			case GLFW_KEY_B:
+				keyboard_pressed_statey = 0;
 				break;
 			default:
 				break;
@@ -411,24 +418,39 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
 			case GLFW_KEY_ESCAPE:
 				quit(window);
 				break;
-			case GLFW_KEY_P:
+			case GLFW_KEY_KP_ADD:
 				zoominstate=1;
 				break;
-			case GLFW_KEY_M:
+			case GLFW_KEY_KP_SUBTRACT:
 				zoomoutstate = 1;
 				break;
-			case GLFW_KEY_A:
+			case GLFW_KEY_LEFT:
 				panleft = 1;
 				break;
-			case GLFW_KEY_D:
+			case GLFW_KEY_RIGHT:
 				panright = 1;
 				break;
-			case GLFW_KEY_W:
+			case GLFW_KEY_UP:
 				panup = 1;
 				break;
-			case GLFW_KEY_S:
+			case GLFW_KEY_DOWN:
 				pandown = 1;
 				break;
+			case GLFW_KEY_A:
+				keyboard_pressed_statex = 1;
+				if(keyboard_pressed_statey==0){
+					keyboardx = fireposx;
+					initx = fireposx;
+					inity = fireposy;
+				}
+				break;
+			case GLFW_KEY_B:
+				keyboard_pressed_statey = 1;
+				if(keyboard_pressed_statex==0){
+					keyboardy = fireposy;
+					initx = fireposx;
+					inity = fireposy;
+				}
 			default:
 				break;
 		}
@@ -481,7 +503,7 @@ void mouseButton (GLFWwindow* window, int button, int action, int mods)
 				gravity = 0.2;
 				power = 0;
 			}
-			if (action == GLFW_RELEASE){
+			if (action == GLFW_RELEASE ){
 				//triangle_rot_dir *= -1;
 				if(pressed_state==1){
 					pressed_state=3;
@@ -1073,7 +1095,17 @@ void draw ()
 		}
 	}
 
-	if(pressed_state==1)
+	if(keyboard_pressed_statex == 1){
+		keyboardx -= 2;
+		curx = keyboardx;
+	}
+	if(keyboard_pressed_statey == 1){
+		keyboardy -= 2;
+		cury = keyboardy;
+	}
+		
+
+	if(pressed_state==1 || keyboard_pressed_statex == 1 || keyboard_pressed_statey == 1)
 		if(sqrt((curx-initx)*(curx-initx)+(cury-inity)*(cury-inity)) > 70){
 			double angle_present = -M_PI+atan2(inity-cury,initx-curx);
 			curx = initx + 70*cos(angle_present);
@@ -1086,7 +1118,7 @@ void draw ()
 	glm::mat4 rotateCatapult = glm::rotate((float)(atan2(-cury+fireposy+10 ,-curx+fireposx-10)), glm::vec3(0,0,1));
 	double scalelength2 = sqrt((fireposx-10 - curx)*(fireposx -10 -curx) + (fireposy+10 - cury)*(fireposy+10-cury));
 	glm::mat4 scaleCatapult = glm::scale(glm::vec3(scalelength2 , 1, 1));
-	if(pressed_state == 1)
+	if(pressed_state == 1 || keyboard_pressed_statex == 1 || keyboard_pressed_statey == 1)
 		Matrices.model *= (translateCatapult2 * rotateCatapult *  scaleCatapult * translateCatapult);
 	else
 		Matrices.model *= translateCatapult;
@@ -1097,13 +1129,13 @@ void draw ()
 	Matrices.model = glm::mat4(1.0f);
 	glm::mat4 translateRectangle;// = glm::translate (glm::vec3(curx, cury, 0));        // glTranslatef
 	glm::mat4 rotateRectangle; // rotate about vector (-1,1,1)
-	if(pressed_state==0){
+	if(pressed_state==0 && keyboard_pressed_statex == 0 && keyboard_pressed_statey == 0){
 		translateRectangle = glm::translate (glm::vec3(fireposx, fireposy, 0));        // glTranslatef
 		cannonball->centerx = fireposx;
 		cannonball->centery = fireposy;
 		cannonball->radius = cannonball_size;
 	}
-	else if(pressed_state==1){
+	else if(pressed_state==1 || keyboard_pressed_statex == 1 || keyboard_pressed_statey == 1){
 		if(sqrt((curx-initx)*(curx-initx)+(cury-inity)*(cury-inity)) > 70){
 			double angle_present = -M_PI+atan2(inity-cury,initx-curx);
 			curx = initx + 70*cos(angle_present);
@@ -1176,7 +1208,7 @@ void draw ()
 		rotateRectangle = glm::rotate((float)(atan2(-cury+inity,-curx+initx)), glm::vec3(0,0,1)); // rotate about vector (-1,1,1)
 
 	//  Matrices.model *= (translateRectangle * rotateRectangle);
-	if(pressed_state==3 || pressed_state==1)  Matrices.model *= (translateRectangle * rotateRectangle);
+	if(pressed_state==3 || pressed_state==1 || keyboard_pressed_statex == 1 || keyboard_pressed_statey)  Matrices.model *= (translateRectangle * rotateRectangle);
 	else  Matrices.model *= (translateRectangle );
 	MVP = VP * Matrices.model;
 	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
@@ -1191,7 +1223,7 @@ void draw ()
 	rotateCatapult = glm::rotate((float)(atan2(-cury+fireposy + 15,-curx+fireposx + 20)), glm::vec3(0,0,1));
 	double scalelength = sqrt((fireposx+20 - curx)*(fireposx + 20 -curx) + (fireposy+15 - cury)*(fireposy+15-cury));
 	scaleCatapult = glm::scale(glm::vec3(scalelength , 1, 1));
-	if(pressed_state == 1)
+	if(pressed_state == 1 || keyboard_pressed_statex == 1 || keyboard_pressed_statey == 1)
 		Matrices.model *= (translateCatapult2 * rotateCatapult *  scaleCatapult * translateCatapult);
 	else
 		Matrices.model *= translateCatapult;
