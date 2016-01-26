@@ -694,8 +694,8 @@ void createPig ()
 {
 	// GL3 accepts only Triangles. Quads are not supported
 	double n=30;
-	static GLfloat vertex_buffer_data[6][9*30+2*3 +9*15*2 + 9*15*2];
-	static GLfloat color_buffer_data[6][9*30+2*3 + 9*15*2 + 9*15*2];
+	static GLfloat vertex_buffer_data[6][9*30+2*3 +9*15*2 + 9*15*2 + 9*15 + 9*15 * 2];
+	static GLfloat color_buffer_data[6][9*30+2*3 + 9*15*2 + 9*15*2 + 9*15 + 9*15 * 2];
 	double sizea[6]={18 + 5, 23 +5 , 20 + 5, 25 + 5, 20 + 5, 28 + 5},sizeb[6]={18, 23, 20, 25, 20, 28};
 	double eyeline = 0.5;
 	float angle=0;
@@ -774,15 +774,64 @@ void createPig ()
 			color_buffer_data[j][9*i+7] = 0;//194.0f/255.0f;
 			color_buffer_data[j][9*i+8] = 0;//65.0f/255.0f;
 		}
+	angle = 0;
+	for(int j=0;j<6;j++,angle=0)
+		for(int i=3*n;i<3*n + n/2;i++){
+			vertex_buffer_data[j][9*i]=0,vertex_buffer_data[j][9*i+1]=5,vertex_buffer_data[j][9*i+2] = 0;
+			vertex_buffer_data[j][9*i+3]=0.25*sizea[j]*cos(angle*M_PI/180.0f);
+			vertex_buffer_data[j][9*i+4]=5+0.25*sizea[j]*sin(angle*M_PI/180.0f);
+			vertex_buffer_data[j][9*i+5]=0;
+			angle += 360.0f/(n/2);
+			vertex_buffer_data[j][9*i+6]=0.25*sizea[j]*cos(angle*M_PI/180.0f);
+			vertex_buffer_data[j][9*i+7]=5+0.25*sizea[j]*sin(angle*M_PI/180.0f);
+			vertex_buffer_data[j][9*i+8]=0;
+//rgb(167,233,1)
+			color_buffer_data[j][9*i] = 167.0f/255.0f;
+			color_buffer_data[j][9*i+1] = 233.0f/255.0f;
+			color_buffer_data[j][9*i+2] = 1.0f/255.0f;
+			color_buffer_data[j][9*i+3] = 167.0f/255.0f;
+			color_buffer_data[j][9*i+4] = 233.0f/255.0f;
+			color_buffer_data[j][9*i+5] = 1.0f/255.0f;
+			color_buffer_data[j][9*i+6] = 167.0f/255.0f;
+			color_buffer_data[j][9*i+7] = 233.0f/255.0f;
+			color_buffer_data[j][9*i+8] = 1.0f/255.0f;
+		}
+	angle = 0;
+	for(int j=0;j<6;j++,angle=0)
+		for(int i=3*n + n/2;i<4*n + n/2;i++){
+			if(i<4*n)
+				ap = 0.1*sizea[j];
+			else
+				ap = -0.1*sizea[j];
+			if(i==4*n) angle = 0;
+			vertex_buffer_data[j][9*i]=ap,vertex_buffer_data[j][9*i+1]=5,vertex_buffer_data[j][9*i+2] = 0;
+			vertex_buffer_data[j][9*i+3]=ap+0.08*sizea[j]*cos(angle*M_PI/180.0f);
+			vertex_buffer_data[j][9*i+4]=5+0.08*sizea[j]*sin(angle*M_PI/180.0f);
+			vertex_buffer_data[j][9*i+5]=0;
+			angle += 360.0f/(n/2);
+			vertex_buffer_data[j][9*i+6]=ap+0.08*sizea[j]*cos(angle*M_PI/180.0f);
+			vertex_buffer_data[j][9*i+7]=5+0.08*sizea[j]*sin(angle*M_PI/180.0f);
+			vertex_buffer_data[j][9*i+8]=0;
+//rgb(31,55,24)
+			color_buffer_data[j][9*i] = 31.0f/255.0f;
+			color_buffer_data[j][9*i+1] = 55.0f/255.0f;
+			color_buffer_data[j][9*i+2] = 24.0/255.0f;
+			color_buffer_data[j][9*i+3] = 31.0f/255.0f;
+			color_buffer_data[j][9*i+4] = 55.0f/255.0f;
+			color_buffer_data[j][9*i+5] = 24.0f/255.0f;
+			color_buffer_data[j][9*i+6] = 31.0f/255.0f;
+			color_buffer_data[j][9*i+7] = 55.0f/255.0f;
+			color_buffer_data[j][9*i+8] = 24.0f/255.0f;
+		}
 	piginitx[0]=50, piginitx[1]=345, piginitx[2] = 415, piginitx[3] = 280, piginitx[4] = 70,piginitx[5] = 100;
 	// create3DObject creates and returns a handle to a VAO that can be used later
-	pigs[0] = create3DObject(GL_TRIANGLES, 3*n*3  ,GAME_PIG, vertex_buffer_data[0], color_buffer_data[0], 50, 200-sizeb[0], sizea[0], GL_FILL);
-	pigs[1] = create3DObject(GL_TRIANGLES, 3*n*3  ,GAME_PIG, vertex_buffer_data[1], color_buffer_data[1], 345, 200-50-sizeb[1], sizea[1], GL_FILL);
-	pigs[2] = create3DObject(GL_TRIANGLES, 3*n*3  ,GAME_PIG, vertex_buffer_data[2], color_buffer_data[2], 415, 200-sizeb[2], sizea[2], GL_FILL);
-	pigs[3] = create3DObject(GL_TRIANGLES, 3*n*3  ,GAME_PIG, vertex_buffer_data[3], color_buffer_data[3], 280, 200-50-40-sizeb[3], sizea[3], GL_FILL);
-	pigs[4] = create3DObject(GL_TRIANGLES, 3*n*3  ,GAME_PIG, vertex_buffer_data[4], color_buffer_data[4], 70, -110 - 10- sizeb[4], sizea[4], GL_FILL);
-	pigs[5] = create3DObject(GL_TRIANGLES, 3*n*3  ,GAME_PIG, vertex_buffer_data[5], color_buffer_data[5], 100, -210 - 10- sizeb[5], sizea[4], GL_FILL);
-	
+	pigs[0] = create3DObject(GL_TRIANGLES, 4*n*3 + (n/2) *3  ,GAME_PIG, vertex_buffer_data[0], color_buffer_data[0], 50, 200-sizeb[0], sizea[0], GL_FILL);
+	pigs[1] = create3DObject(GL_TRIANGLES, 4*n*3 + (n/2) *3 ,GAME_PIG, vertex_buffer_data[1], color_buffer_data[1], 345, 200-50-sizeb[1], sizea[1], GL_FILL);
+	pigs[2] = create3DObject(GL_TRIANGLES, 4*n*3 + (n/2) *3  ,GAME_PIG, vertex_buffer_data[2], color_buffer_data[2], 415, 200-sizeb[2], sizea[2], GL_FILL);
+	pigs[3] = create3DObject(GL_TRIANGLES, 4*n*3 + (n/2) *3  ,GAME_PIG, vertex_buffer_data[3], color_buffer_data[3], 280, 200-50-40-sizeb[3], sizea[3], GL_FILL);
+	pigs[4] = create3DObject(GL_TRIANGLES, 4*n*3 + (n/2) *3  ,GAME_PIG, vertex_buffer_data[4], color_buffer_data[4], 70, -110 - 10- sizeb[4], sizea[4], GL_FILL);
+	pigs[5] = create3DObject(GL_TRIANGLES, 4*n*3 + (n/2) *3  ,GAME_PIG, vertex_buffer_data[5], color_buffer_data[5], 100, -210 - 10- sizeb[5], sizea[4], GL_FILL);
+
 	pig_wood[3] = 1;
 	pig_wood[1] = 2;
 }
@@ -1307,20 +1356,11 @@ void draw ()
 			break;
 		}
 	}
-		/*	
-	if(cannonball->centerx >= 300 - 35 - cannonball_size && cannonball->centerx <= 300 - 35 + 60 + cannonball_size && cannonball->centery >= 160 - cannonball_size) {
-		if(cannonball->centery < 160 && cannonball->centerx > 300 - 35 - cannonball_size/2 )
-			speedy = -speedy;
-		else 
-			speedx = -speedx;
-	}
-		*/	
 	if(pressed_state==3) 
 		rotateRectangle = glm::rotate((float)(atan2(-prevy+inity,-prevx+initx)), glm::vec3(0,0,1)); // rotate about vector (-1,1,1)
 	else
 		rotateRectangle = glm::rotate((float)(atan2(-cury+inity,-curx+initx)), glm::vec3(0,0,1)); // rotate about vector (-1,1,1)
 
-	//  Matrices.model *= (translateRectangle * rotateRectangle);
 	if(pressed_state==3 || pressed_state==1 || keyboard_pressed_statex == 1 || keyboard_pressed_statey)  Matrices.model *= (translateRectangle * rotateRectangle);
 	else  Matrices.model *= (translateRectangle );
 	MVP = VP * Matrices.model;
@@ -1376,9 +1416,8 @@ void draw ()
 	// Render font on screen
 	static int fontScale = 1;
 	float fontScaleValue = 50 + 0.25*sinf(fontScale*M_PI/180.0f);
-	//rgb(227,245,255)
-	//glm::vec3 fontColor = glm::vec3(227.0f/255.0f,245.0f/255.0f,255.0f/255.0f);//getRGBfromHue (fontScale);
-	glm::vec3 fontColor = glm::vec3(255.0f,255.0f,255.0f);//getRGBfromHue (fontScale);
+	glm::vec3 fontColor = glm::vec3(228.0f/255.0f,142.0f/255.0f,57.0f/255.0f);//getRGBfromHue (fontScale);
+				
 
 
 
@@ -1404,9 +1443,6 @@ void draw ()
 
 	// Render font
 	GL3Font.font->Render(str);
-	//camera_rotation_angle++; // Simulating camera rotation
-	//triangle_rotation = triangle_rotation + increments*triangle_rot_dir*triangle_rot_status;
-	// rectangle_rotation = rectangle_rotation + increments*rectangle_rot_dir*rectangle_rot_status;
 }
 
 /* Initialise glfw window, I/O callbacks and the renderer to use */
@@ -1425,7 +1461,7 @@ GLFWwindow* initGLFW (int width, int height)
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	window = glfwCreateWindow(width, height, "Sample OpenGL 3.3 Application", NULL, NULL);
+	window = glfwCreateWindow(width, height, "Angry birds", NULL, NULL);
 
 	if (!window) {
 		glfwTerminate();
