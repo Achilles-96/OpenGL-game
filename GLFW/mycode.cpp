@@ -26,6 +26,7 @@
 #define GAME_SCOREBOARD 3
 
 using namespace std;
+void reshapeWindow (GLFWwindow* window, int width, int height);
 
 class VAO {
 	public:
@@ -360,12 +361,13 @@ GLuint createTexture (const char* filename)
 
 int pressed_state = 0, collision_state=0, zoominstate = 0, zoomoutstate = 0, panright = 0, panleft = 0, panup = 0, pandown = 0;
 int keyboard_pressed_statex = 0, keyboard_pressed_statey = 0;
-double curx,cury,initx,inity,speedx,speedy,strength=0.5,prevx,prevy,cannonball_size=18,gravity=0.2;
-double fireposx=-380,fireposy=130, keyboardx, keyboardy;
+double curx,cury,initx = -380,inity = 130,speedx,speedy,strength=0.5,prevx,prevy,cannonball_size=18,gravity=0.2;
+double fireposx=-380,fireposy=130, keyboardx = -380 , keyboardy = 130;
 double pivotx=-10,pivoty=-30,angular_v[6],angle[6],woodspx[6],woodspy[6],pigspx[10], pigspy[10], piginitx[10];
 VAO  *cannonball, *gameFloor, *woodlogs[6], *pigs[10], *powerboard, *powerelement, *background, *catapult;
-float screenleft = -600, screenright = 600, screentop = -300, screenbotton = 300;
+float screenleft = -600.0f, screenright = 600.0f, screentop = -300.0f, screenbotton = 300.0f;
 int pig_wood[10];
+int panning_state=0, paninitx, paninity;
 
 int score = 0;
 
@@ -440,6 +442,7 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
 				keyboard_pressed_statex = 1;
 				if(keyboard_pressed_statey==0){
 					keyboardx = fireposx;
+					keyboardy = fireposy;
 					initx = fireposx;
 					inity = fireposy;
 				}
@@ -448,9 +451,22 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
 				keyboard_pressed_statey = 1;
 				if(keyboard_pressed_statex==0){
 					keyboardy = fireposy;
+					keyboardx = fireposx;
 					initx = fireposx;
 					inity = fireposy;
 				}
+				break;
+			case GLFW_KEY_SPACE:
+				pressed_state = 3;
+				if(sqrt((keyboardx-initx)*(keyboardx-initx)+(keyboardy-inity)*(keyboardy-inity)) > 30){
+					double angle_present = -M_PI+atan2(inity-keyboardy,initx-keyboardx);
+					keyboardx = initx + 30*cos(angle_present);
+					keyboardy = inity + 30*sin(angle_present);
+				}
+				speedx=(initx-keyboardx)*strength;
+				speedy=(inity-keyboardy)*strength;
+				break;
+
 			default:
 				break;
 		}
@@ -469,10 +485,54 @@ void keyboardChar (GLFWwindow* window, unsigned int key)
 			break;
 	}
 }
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	if(yoffset == 1){
+		screenleft /= 1.02;
+		screenright /= 1.02;
+		screentop /= 1.02;
+		screenbotton /= 1.02;
+		reshapeWindow(window, 1200, 600);
+	}
+	else if(yoffset == -1){
+		if(screenleft >= -600.0f/1.02f)
+			screenleft *= 1.02;
+		if(screenright <= 600.0f/1.02f)
+			screenright *= 1.02;
+		if(screentop >= -300.0f/1.02f)
+			screentop *= 1.02;
+		if(screenbotton <= 300.0f/1.02f)
+			screenbotton *= 1.02;
+		reshapeWindow(window, 1200, 600);
+	}
+
+}
+
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
 	curx = ((screenright - screenleft)/1200.0f)*xpos + screenleft;
 	cury = ((screenbotton - screentop)/600.0f)*ypos + screentop;
+	if(panning_state == 1){
+		if(paninitx - curx < 0 && screenleft >= -600 + fabs(paninitx - curx)){
+			screenleft -= fabs(paninitx - curx);
+			screenright -= fabs(paninitx - curx);
+		}
+		if(paninitx - curx > 0 && screenright <= 600 - fabs(paninitx -curx)){
+			screenleft += fabs(paninitx -curx);
+			screenright += fabs(paninitx -curx);
+		}
+		if(paninity - cury < 0  && screentop >= -300 + fabs(paninity - cury)){
+			screentop -= fabs(paninity - cury);
+			screenbotton -= fabs(paninity - cury);
+		}
+		if(paninity - cury > 0 && screenbotton <= 300 - fabs(paninity -cury)){
+			screentop += fabs(paninity - cury);
+			screenbotton += fabs(paninity -cury);
+		}
+		reshapeWindow(window, 1200, 600);
+	}
+
 }
 
 int is_cannon_clicked(double mousex, double mousey) {
@@ -502,6 +562,8 @@ void mouseButton (GLFWwindow* window, int button, int action, int mods)
 				pressed_state=0;
 				gravity = 0.2;
 				power = 0;
+				keyboardx = fireposx;
+				keyboardy = fireposy;
 			}
 			if (action == GLFW_RELEASE ){
 				//triangle_rot_dir *= -1;
@@ -522,7 +584,12 @@ void mouseButton (GLFWwindow* window, int button, int action, int mods)
 			break;
 		case GLFW_MOUSE_BUTTON_RIGHT:
 			if (action == GLFW_RELEASE) {
-				//rectangle_rot_dir *= -1;
+				panning_state = 0;
+			}
+			if(action == GLFW_PRESS){
+				panning_state = 1;
+				paninitx = curx;
+				paninity = cury;
 			}
 			break;
 		default:
@@ -724,8 +791,8 @@ void createCannonball ()
 {
 	// GL3 accepts only Triangles. Quads are not supported
 	double n=20;
-	static GLfloat vertex_buffer_data[9*20 + 2*3];
-	static GLfloat color_buffer_data [9*20 + 2*3];
+	static GLfloat vertex_buffer_data[9*20 + 2*3 + 2*9*20 + 9*20];
+	static GLfloat color_buffer_data [9*20 + 2*3 + 2*9*20 +9*20];
 	float angle=0;
 	for(int i=0;i<n;i++){
 		vertex_buffer_data[9*i] = vertex_buffer_data[9*i+1] = vertex_buffer_data[9*i+2] = 0;
@@ -747,35 +814,66 @@ void createCannonball ()
 		color_buffer_data[9*i+7] = 1.0f/255.0f;
 		color_buffer_data[9*i+8] = 14.0f/255.0f;
 	}
+	angle= 0;
+	for(int i=n;i<n+n;i++){
+		vertex_buffer_data[9*i] =5; vertex_buffer_data[9*i+1] =-2; vertex_buffer_data[9*i+2] = 0;
+		vertex_buffer_data[9*i+3]=5+cannonball_size*0.25*cos(angle*M_PI/180.0f);
+		vertex_buffer_data[9*i+4]=-2+cannonball_size*0.5*sin(angle*M_PI/180.0f);
+		vertex_buffer_data[9*i+5]=0;
+		angle += 360.0f/(n);
+		vertex_buffer_data[9*i+6]=5+cannonball_size*0.25*cos(angle*M_PI/180.0f);
+		vertex_buffer_data[9*i+7]=-2+cannonball_size*0.5*sin(angle*M_PI/180.0f);
+		vertex_buffer_data[9*i+8]=0;
 
+		color_buffer_data[9*i] = 1;
+		color_buffer_data[9*i+1] = 1;
+		color_buffer_data[9*i+2] = 1;
+		color_buffer_data[9*i+3] = 1;
+		color_buffer_data[9*i+4] = 1;
+		color_buffer_data[9*i+5] = 1;
+		color_buffer_data[9*i+6] = 1;
+		color_buffer_data[9*i+7] = 1;
+		color_buffer_data[9*i+8] = 1;
+	}
+	angle =0 ;
+	for(int i=2*n;i<2*n+n;i++){
+		vertex_buffer_data[9*i] = 5;vertex_buffer_data[9*i+1] =0; vertex_buffer_data[9*i+2] = 0;
+		vertex_buffer_data[9*i+3]=5+0.15*cannonball_size*cos(angle*M_PI/180.0f);
+		vertex_buffer_data[9*i+4]=0.15*cannonball_size*sin(angle*M_PI/180.0f);
+		vertex_buffer_data[9*i+5]=0;
+		angle += 360.0f/n;
+		vertex_buffer_data[9*i+6]=5+0.15*cannonball_size*cos(angle*M_PI/180.0f);
+		vertex_buffer_data[9*i+7]=0.15*cannonball_size*sin(angle*M_PI/180.0f);
+		vertex_buffer_data[9*i+8]=0;
 
-	for(int i=9*n;i<9*(n+2);i+=3){
+		color_buffer_data[9*i] = 0;
+		color_buffer_data[9*i+1] = 0;
+		color_buffer_data[9*i+2] = 0;
+		color_buffer_data[9*i+3] = 0;
+		color_buffer_data[9*i+4] = 0;
+		color_buffer_data[9*i+5] = 0;
+		color_buffer_data[9*i+6] = 0;
+		color_buffer_data[9*i+7] = 0;
+		color_buffer_data[9*i+8] = 0;
+	}
+
+	for(int i=9*3*n;i<9*(3*n+2);i+=3){
 		color_buffer_data[i] =252.0f/255.0f;
 		color_buffer_data[i+1] = 187.0f/255.0f;
 		color_buffer_data[i+2] = 35.0f/255.0f;
 	}
 
-	vertex_buffer_data[9*20] = cannonball_size*cos((360.0f/n) *M_PI/180.0f);
-	vertex_buffer_data[9*20+1] = cannonball_size*sin((360.0f/n) *M_PI/180.0f);
-	vertex_buffer_data[9*20+2] = 0;
-	vertex_buffer_data[9*20+3] = cannonball_size+10;
-	vertex_buffer_data[9*20+4] = -2;
-	vertex_buffer_data[9*20+5] = 0;
-	vertex_buffer_data[9*20+6] = cannonball_size*cos((360.0f/n) *M_PI/180.0f);
-	vertex_buffer_data[9*20+7] = -cannonball_size*sin((360.0f/n) *M_PI/180.0f);
-	vertex_buffer_data[9*20+8] = 0;
-	/*	vertex_buffer_data[9*20+9] = cannonball_size*cos((360.0f/n) *M_PI/180.0f);
-		vertex_buffer_data[9*20+10] = cannonball_size*sin((360.0f/n) *M_PI/180.0f);
-		vertex_buffer_data[9*20+11] = 0;
-		vertex_buffer_data[9*20+12] = cannonball_size;//cos((360.0f/n) *M_PI/180.0f);
-		vertex_buffer_data[9*20+13] = 0;//cannonball_size*sin((360.0f/n) *M_PI/180.0f);
-		vertex_buffer_data[9*20+14] = 0;
-		vertex_buffer_data[9*20+15] = cannonball_size+10;
-		vertex_buffer_data[9*20+16] = 0;
-		vertex_buffer_data[9*20+17] = 0;
-		*/
+	vertex_buffer_data[9*20*3] = cannonball_size*cos((360.0f/n) *M_PI/180.0f);
+	vertex_buffer_data[9*20*3+1] = cannonball_size*sin((360.0f/n) *M_PI/180.0f);
+	vertex_buffer_data[9*20*3+2] = 0;
+	vertex_buffer_data[9*20*3+3] = cannonball_size+10;
+	vertex_buffer_data[9*20*3+4] = -2;
+	vertex_buffer_data[9*20*3+5] = 0;
+	vertex_buffer_data[9*20*3+6] = cannonball_size*cos((360.0f/n) *M_PI/180.0f);
+	vertex_buffer_data[9*20*3+7] = -cannonball_size*sin((360.0f/n) *M_PI/180.0f);
+	vertex_buffer_data[9*20*3+8] = 0;
 	// create3DObject creates and returns a handle to a VAO that can be used later
-	cannonball = create3DObject(GL_TRIANGLES, n*3 + 2*3, GAME_BIRD, vertex_buffer_data, color_buffer_data,  0, 0, cannonball_size, GL_FILL);
+	cannonball = create3DObject(GL_TRIANGLES, 3*n*3 + 2*3, GAME_BIRD, vertex_buffer_data, color_buffer_data,  0, 0, cannonball_size, GL_FILL);
 }
 
 void createGameFloor ()
@@ -951,6 +1049,8 @@ void draw ()
 	//  Don't change unless you are sure!!
 	glm::mat4 MVP;	// MVP = Projection * View * Model
 
+	
+	//Displaying background using texture
 	glUseProgram(textureProgramID);
 
 	Matrices.model = glm::mat4(1.0f);
@@ -979,6 +1079,7 @@ void draw ()
 
 	// Pop matrix to undo transformations till last push matrix instead of recomputing model matrix
 	// glPopMatrix ();
+	//Displaying pigs and counting them for score 
 	int cnt = 0;
 	for(int i=0;i<6;i++){
 		if(!pigs[i]->dead){
@@ -1005,22 +1106,19 @@ void draw ()
 			cnt++;
 	}
 
+	//Displaying game floor
 	Matrices.model = glm::mat4(1.0f);
 	MVP = VP * Matrices.model;
 	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
 	draw3DObject(gameFloor);
 	
-	Matrices.model = glm::mat4(1.0f);
-	MVP = VP * Matrices.model;
-	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
-	//draw3DObject(temp);
-
+	//Displaying power board
 	Matrices.model = glm::mat4(1.0f);
 	MVP = VP * Matrices.model;
 	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
 	draw3DObject(powerboard);
 
-
+	//Checking collisions between pigs and wood logs
 	Matrices.model = glm::mat4(1.0f);
 	glm::mat4 translateWoodlog,rotateWoodlog;
 	translateWoodlog = glm::translate(glm::vec3(0,170,0));
@@ -1054,6 +1152,7 @@ void draw ()
 	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
 	draw3DObject(woodlogs[0]);
 
+	//Displaying wood logs
 	for(int i=1;i<=5;i++){
 		Matrices.model = glm::mat4(1.0f);
 		translateWoodlog = glm::translate(glm::vec3(woodlogs[i]->centerx + woodspx[i],woodlogs[i]->centery,0));
@@ -1070,6 +1169,7 @@ void draw ()
 		}
 	}
 
+	//Checking collisions between pigs and pigs
 	for(int i=0;i<4;i++) {
 		if(pig_wood[i]!=0){
 			int j = pig_wood[i];
@@ -1095,16 +1195,27 @@ void draw ()
 		}
 	}
 
+	//Controlling bird using keyboard
 	if(keyboard_pressed_statex == 1){
-		keyboardx -= 2;
+		keyboardy -= 2;
+		if(keyboardx < fireposx)
+			keyboardx += 2;
+		else if(keyboardx > fireposx)
+			keyboardx -= 2;
 		curx = keyboardx;
+		cury = keyboardy;
 	}
 	if(keyboard_pressed_statey == 1){
-		keyboardy -= 2;
+		keyboardy += 2;
+		if(keyboardx < fireposx)
+			keyboardx -=2;
+		else if(keyboardx >fireposx)
+			keyboardx += 2;
+		curx = keyboardx;
 		cury = keyboardy;
 	}
 		
-
+	//Limiting the power with which bird can be shot
 	if(pressed_state==1 || keyboard_pressed_statex == 1 || keyboard_pressed_statey == 1)
 		if(sqrt((curx-initx)*(curx-initx)+(cury-inity)*(cury-inity)) > 70){
 			double angle_present = -M_PI+atan2(inity-cury,initx-curx);
@@ -1112,6 +1223,7 @@ void draw ()
 			cury = inity + 70*sin(angle_present);
 		}
 	
+	//Displaying catapult
 	Matrices.model = glm::mat4(1.0f);
 	glm::mat4 translateCatapult = glm::translate(glm::vec3(-0.5, -4, 0));
 	glm::mat4 translateCatapult2 = glm::translate(glm::vec3(fireposx-10 , fireposy+10 , 0));
@@ -1124,8 +1236,10 @@ void draw ()
 		Matrices.model *= translateCatapult;
 	MVP = VP * Matrices.model;
 	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
-	draw3DObject(catapult);
+	if(pressed_state==1)
+		draw3DObject(catapult);
 
+	//Displaying the bird
 	Matrices.model = glm::mat4(1.0f);
 	glm::mat4 translateRectangle;// = glm::translate (glm::vec3(curx, cury, 0));        // glTranslatef
 	glm::mat4 rotateRectangle; // rotate about vector (-1,1,1)
@@ -1187,7 +1301,6 @@ void draw ()
 					woodspx[2] = speedx * 0.05;
 					woodspx[1] = woodspx[2] * 0.5;
 				}
-
 				speedx = -0.25*speedx, speedy = 0.25*speedy;
 				initx = woodlogs[i]->centerx - woodsizex[i] - cannonball_size - 1;
 			}
@@ -1217,6 +1330,7 @@ void draw ()
 	draw3DObject(cannonball);
 
 
+	//Displaying power
 	Matrices.model = glm::mat4(1.0f);
 	translateCatapult = glm::translate(glm::vec3(-0.5, -4, 0));
 	translateCatapult2 = glm::translate(glm::vec3(fireposx + 20, fireposy + 15, 0));
@@ -1229,7 +1343,7 @@ void draw ()
 		Matrices.model *= translateCatapult;
 	MVP = VP * Matrices.model;
 	glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
-	draw3DObject(catapult);
+	if(pressed_state ==1) draw3DObject(catapult);
 
 	Matrices.model = glm::mat4(1.0f);
 	glm::mat4 scalePower = glm::scale(glm::vec3(power*6,1,1));
@@ -1256,6 +1370,8 @@ void draw ()
 			
 		}
 	}
+
+	//Rendering score
 	
 	// Render font on screen
 	static int fontScale = 1;
@@ -1338,6 +1454,7 @@ GLFWwindow* initGLFW (int width, int height)
 	/* Register function to handle mouse click */
 	glfwSetMouseButtonCallback(window, mouseButton);  // mouse button clicks
 	glfwSetCursorPosCallback(window, cursor_position_callback);
+	glfwSetScrollCallback(window, scroll_callback);
 	return window;
 }
 
@@ -1474,7 +1591,7 @@ int main (int argc, char** argv)
 		}
 		if(zoominstate == 1 || zoomoutstate == 1 || panleft == 1 || panright == 1 || panup == 1 || pandown == 1)
 			reshapeWindow(window, width, height);
-		// OpenGL Draw commands
+		// OpenGL Dramands
 		draw();
 
 		// Swap Frame Buffer in double buffering
