@@ -366,6 +366,7 @@ double fireposx=-380,fireposy=130, keyboardx = -380 , keyboardy = 130;
 double pivotx=-10,pivoty=-30,angular_v[6],angle[6],woodspx[6],woodspy[6],pigspx[10], pigspy[10], piginitx[10];
 VAO  *cannonball, *gameFloor, *woodlogs[6], *pigs[10], *powerboard, *powerelement, *background, *catapult;
 float screenleft = -600.0f, screenright = 600.0f, screentop = -300.0f, screenbotton = 300.0f;
+int scoretimer[10][3],tim=5;
 int pig_wood[10];
 int panning_state=0, paninitx, paninity;
 
@@ -1135,6 +1136,9 @@ void draw ()
 			double x1 = cannonball->centerx,y1 = cannonball->centery, x2 = pigs[i]->centerx, y2 = pigs[i]->centery;
 			if(pigs[i]->radius + cannonball->radius > sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1))){
 				pigs[i]->dead = 1;
+				scoretimer[i][0] = pigs[i]->centerx; 
+				scoretimer[i][1] = pigs[i]->centery; 
+				scoretimer[i][2] = tim;
 				speedx = 0.1*speedx;
 				speedy = 0.1*speedy;
 			}
@@ -1180,8 +1184,12 @@ void draw ()
 			angular_v[0] += 0.3;
 			angle[0] = min(angle[0],90.0);
 			Matrices.model *= (translateWoodlog*rotateWoodlog*translateWoodlog2);
-			if(angle[0] >= 45)
+			if(angle[0] >= 45){
 				pigs[0]->dead = 1;
+				scoretimer[0][0]=pigs[0]->centerx;
+				scoretimer[0][1]=pigs[0]->centery;
+				scoretimer[0][2]=tim;
+			}
 		}
 		else{
 			translateWoodlog = glm::translate(glm::vec3(-10,200,0));
@@ -1191,8 +1199,12 @@ void draw ()
 			angular_v[0] += 0.3;
 			angle[0] = max(angle[0],-90.0);
 			Matrices.model *= (translateWoodlog*rotateWoodlog*translateWoodlog2);
-			if(angle[0] >= 45)
+			if(angle[0] >= 45){
 				pigs[0]->dead = 1;
+				scoretimer[0][0]=pigs[0]->centerx;
+				scoretimer[0][1]=pigs[0]->centery;
+				scoretimer[0][2]=tim;
+			}
 		}
 	}
 	else
@@ -1227,8 +1239,12 @@ void draw ()
 				if(pigs[i]->centerx+pigs[i]->radius<woodlogs[j]->centerx - woodsizex[j])
 					pigspy[i]+=gravity/3.0f;
 				if((pigs[i]->centery+pigs[i]->radius > woodlogs[j+1]->centery - woodsizey[j+1])
-						||pigs[i]->centery + pigs[i]->radius > 200)
+						||pigs[i]->centery + pigs[i]->radius > 200){
 					pigs[i]->dead=1;
+					scoretimer[i][0] = pigs[i]->centerx; 
+					scoretimer[i][1] = pigs[i]->centery; 
+					scoretimer[i][2] = tim;
+				}
 
 			}
 			if(j==2){
@@ -1236,9 +1252,21 @@ void draw ()
 					pigspy[i]+=gravity/3.0f;
 				double x1 = pigs[i]->centerx, y1 = pigs[i]->centery, x2 = pigs[i+1]->centerx, y2 = pigs[i+1]->centery;
 				if(sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2)) < pigs[i]->radius + pigs[i+1]->radius)
-						pigs[i]->dead=pigs[i+1]->dead = 1;
-				if(pigs[i]->centery+pigs[i]->radius>200)
+				{
+					pigs[i]->dead=pigs[i+1]->dead = 1;
+					scoretimer[i][0] = pigs[i]->centerx; 
+					scoretimer[i][1] = pigs[i]->centery; 
+					scoretimer[i][2]=tim;
+					scoretimer[i+1][0] = pigs[i+1]->centerx; 
+					scoretimer[i+1][1] = pigs[i+1]->centery; 
+					scoretimer[i+1][2]=tim;
+				}
+				if(pigs[i]->centery+pigs[i]->radius>200){
 					pigs[i]->dead=1;
+					scoretimer[i][0] = pigs[i]->centerx; 
+					scoretimer[i][1] = pigs[i]->centery; 
+					scoretimer[i][2]=tim;
+				}
 				
 			}
 		}
@@ -1440,9 +1468,20 @@ void draw ()
 	//string str = to_string(score);
 	char str[10];
 	sprintf(str,"SCORE: %d",score);
-
 	// Render font
 	GL3Font.font->Render(str);
+	for(int i=0;i<=6;i++){
+		if(scoretimer[i][3]>0){
+			Matrices.model = glm::mat4(1.0f);
+			glm::mat4 translateText = glm::translate(glm::vec3(scoretimer[i][0],scoretimer[i][1],0));
+			Matrices.model *= (translateText * scaleText * rotateText);
+			MVP = Matrices.projection * Matrices.view * Matrices.model;
+			glUniformMatrix4fv(GL3Font.fontMatrixID, 1, GL_FALSE, &MVP[0][0]);
+			glUniform3fv(GL3Font.fontColorID, 1, &fontColor[0]);
+			//GL3Font.font->Render("100");
+		}
+	}
+
 }
 
 /* Initialise glfw window, I/O callbacks and the renderer to use */
