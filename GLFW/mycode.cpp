@@ -19,11 +19,20 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <ao/ao.h>
+#include <mpg123.h>
+#include <unistd.h>
+#include <signal.h>
+
 #define GAME_BIRD 0
 #define GAME_WOOD_VERTICAL 1
 #define GAME_WOOD_HORIZONTAL 1
 #define GAME_PIG 2
 #define GAME_SCOREBOARD 3
+
+#define BITS 8
+
+pid_t pid;
 
 using namespace std;
 void reshapeWindow (GLFWwindow* window, int width, int height);
@@ -153,6 +162,7 @@ void quit(GLFWwindow *window)
 {
 	glfwDestroyWindow(window);
 	glfwTerminate();
+	kill(pid,SIGKILL);
 	exit(EXIT_SUCCESS);
 }
 
@@ -1470,18 +1480,18 @@ void draw ()
 	sprintf(str,"SCORE: %d",score);
 	// Render font
 	GL3Font.font->Render(str);
-	for(int i=0;i<=6;i++){
+	for(int i=0;i<6;i++){
 		if(scoretimer[i][3]>0){
 			Matrices.model = glm::mat4(1.0f);
-			glm::mat4 translateText = glm::translate(glm::vec3(scoretimer[i][0],scoretimer[i][1],0));
-			Matrices.model *= (translateText * scaleText * rotateText);
+			cout<<scoretimer[i][0]<<" "<<scoretimer[i][1]<<endl;
+			glm::mat4 translateText = glm::translate(glm::vec3(400,0,0));
+			Matrices.model *=  ( translateText *scaleText * rotateText);
 			MVP = Matrices.projection * Matrices.view * Matrices.model;
 			glUniformMatrix4fv(GL3Font.fontMatrixID, 1, GL_FALSE, &MVP[0][0]);
 			glUniform3fv(GL3Font.fontColorID, 1, &fontColor[0]);
-			//GL3Font.font->Render("100");
+			GL3Font.font->Render("100");
 		}
 	}
-
 }
 
 /* Initialise glfw window, I/O callbacks and the renderer to use */
@@ -1627,6 +1637,58 @@ int main (int argc, char** argv)
 	initGL (window, width, height);
 
 	double last_update_time = glfwGetTime(), current_time;
+	
+	
+	pid = fork();
+	if(pid==0){
+		mpg123_handle *mh;
+		unsigned char *buffer;
+		size_t buffer_size;
+		size_t done;
+		int err;
+
+		int driver;
+		ao_device *dev;
+
+		ao_sample_format format;
+		int channels, encoding;
+		long rate;
+
+
+		/* initializations */
+		ao_initialize();
+		driver = ao_default_driver_id();
+		mpg123_init();
+		mh = mpg123_new(NULL, &err);
+		buffer_size = mpg123_outblock(mh);
+		buffer = (unsigned char*) malloc(buffer_size * sizeof(unsigned char));
+
+		/* open the file and get the decoding format */
+		mpg123_open(mh, "trial.mp3");
+		mpg123_getformat(mh, &rate, &channels, &encoding);
+
+		/* set the output format and open the output device */
+		format.bits = mpg123_encsize(encoding) * BITS;
+		format.rate = rate;
+		format.channels = channels;
+		format.byte_format = AO_FMT_NATIVE;
+		format.matrix = 0;
+		dev = ao_open_live(driver, &format, NULL);
+
+		/* decode and play */
+		char *p =(char *)buffer;
+		while (mpg123_read(mh, buffer, buffer_size, &done) == MPG123_OK)
+			ao_play(dev, p, done);
+
+		/* clean up */
+		free(buffer);
+		ao_close(dev);
+		mpg123_close(mh);
+		mpg123_delete(mh);
+		mpg123_exit();
+		ao_shutdown();
+		_exit(0);
+	}
 
 	/* Draw in loop */
 	while (!glfwWindowShouldClose(window)) {
