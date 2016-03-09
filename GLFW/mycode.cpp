@@ -1483,13 +1483,13 @@ void draw ()
 	for(int i=0;i<6;i++){
 		if(scoretimer[i][3]>0){
 			Matrices.model = glm::mat4(1.0f);
-			cout<<scoretimer[i][0]<<" "<<scoretimer[i][1]<<endl;
+			//cout<<scoretimer[i][0]<<" "<<scoretimer[i][1]<<endl;
 			glm::mat4 translateText = glm::translate(glm::vec3(400,0,0));
 			Matrices.model *=  ( translateText *scaleText * rotateText);
 			MVP = Matrices.projection * Matrices.view * Matrices.model;
 			glUniformMatrix4fv(GL3Font.fontMatrixID, 1, GL_FALSE, &MVP[0][0]);
 			glUniform3fv(GL3Font.fontColorID, 1, &fontColor[0]);
-			GL3Font.font->Render("100");
+	//		GL3Font.font->Render("100");
 		}
 	}
 }
@@ -1641,6 +1641,7 @@ int main (int argc, char** argv)
 	
 	pid = fork();
 	if(pid==0){
+		while(1){
 		mpg123_handle *mh;
 		unsigned char *buffer;
 		size_t buffer_size;
@@ -1687,6 +1688,7 @@ int main (int argc, char** argv)
 		mpg123_delete(mh);
 		mpg123_exit();
 		ao_shutdown();
+		}
 		_exit(0);
 	}
 
