@@ -1,5 +1,0 @@
-Run make, it should compile the source
-Additional libraries used: 
-	SOIL for texture rendering
-	FTGL3 for font rendering
-	Combination used is GLFW + GLAD + GLM
